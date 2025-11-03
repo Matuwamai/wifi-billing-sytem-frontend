@@ -5,6 +5,7 @@ import {
   startPayment,
   resetPaymentState,
 } from "../services/payment/paymentSlice.js";
+import { createGuestUser, setUser } from "../services/auth/authSlice.js"; // new
 import {
   Loader2,
   CheckCircle2,
@@ -17,7 +18,7 @@ import {
 const PlansPage = () => {
   const dispatch = useDispatch();
   const { plans, loading: plansLoading } = useSelector((state) => state.plan);
-  const { user } = useSelector((state) => state.auth);
+  const { user, loading: userLoading } = useSelector((state) => state.auth);
   const {
     loading: payLoading,
     success,
@@ -32,8 +33,26 @@ const PlansPage = () => {
     dispatch(fetchPlans());
   }, [dispatch]);
 
+  // ✅ Create guest user automatically if none exists
+  useEffect(() => {
+    const initializeGuest = async () => {
+      if (!user) {
+        // Try to get from localStorage first
+        const storedUser = localStorage.getItem("guestUser");
+        if (storedUser) {
+          dispatch(setUser(JSON.parse(storedUser)));
+        } else {
+          const res = await dispatch(createGuestUser());
+          if (res?.payload?.user) {
+            localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
+          }
+        }
+      }
+    };
+    initializeGuest();
+  }, [dispatch, user]);
+
   const handleBuy = (plan) => {
-    if (!user) return alert("Please log in first.");
     setSelectedPlan(plan);
     setShowModal(true);
   };
@@ -70,7 +89,7 @@ const PlansPage = () => {
 
       {/* Plans Grid */}
       <div className="max-w-6xl mx-auto px-4 pb-16">
-        {plansLoading && (
+        {(plansLoading || userLoading) && (
           <div className="flex justify-center items-center h-40">
             <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
           </div>
