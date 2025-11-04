@@ -1,10 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
+import BASE_URL from "../../../baseURL.js";
 
+axios.defaults.baseURL = BASE_URL;
 export const startPayment = createAsyncThunk(
   "payment/startPayment",
   async ({ phone, userId, planId }) => {
-    const res = await axios.post("/api/payments/start", {
+    const res = await axios.post("/mpesa/pay", {
       phone,
       userId,
       planId,

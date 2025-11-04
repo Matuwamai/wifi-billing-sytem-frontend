@@ -5,7 +5,7 @@ import {
   startPayment,
   resetPaymentState,
 } from "../services/payment/paymentSlice.js";
-import { createGuestUser, setUser } from "../services/auth/authSlice.js"; // new
+import { createGuestUser, setUser } from "../services/auth/authSlice.js";
 import {
   Loader2,
   CheckCircle2,
@@ -29,15 +29,15 @@ const PlansPage = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
+  // Fetch plans on mount
   useEffect(() => {
     dispatch(fetchPlans());
   }, [dispatch]);
 
-  // ✅ Create guest user automatically if none exists
+  // ✅ Automatically create guest user if not logged in
   useEffect(() => {
     const initializeGuest = async () => {
       if (!user) {
-        // Try to get from localStorage first
         const storedUser = localStorage.getItem("guestUser");
         if (storedUser) {
           dispatch(setUser(JSON.parse(storedUser)));
@@ -45,6 +45,7 @@ const PlansPage = () => {
           const res = await dispatch(createGuestUser());
           if (res?.payload?.user) {
             localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
+            dispatch(setUser(res.payload.user));
           }
         }
       }
@@ -52,21 +53,31 @@ const PlansPage = () => {
     initializeGuest();
   }, [dispatch, user]);
 
+  // ✅ Open modal and store selected plan
   const handleBuy = (plan) => {
     setSelectedPlan(plan);
     setShowModal(true);
   };
 
+  // ✅ Handle Payment
   const handlePay = async () => {
+    if (!selectedPlan) return alert("No plan selected.");
+    if (!user || !user.id)
+      return alert("Please wait... preparing your account.");
     if (!phone || phone.length < 10) {
-      alert("Enter a valid phone number (07xxxxxxxx)");
-      return;
+      return alert("Enter a valid phone number (e.g. 07xxxxxxxx)");
     }
-    await dispatch(
-      startPayment({ phone, userId: user.id, planId: selectedPlan.id })
+
+    dispatch(
+      startPayment({
+        phone,
+        userId: user.id,
+        planId: selectedPlan.id,
+      })
     );
   };
 
+  // ✅ Close modal and reset payment state
   const closeModal = () => {
     setShowModal(false);
     setPhone("");
@@ -196,7 +207,7 @@ const PlansPage = () => {
               </button>
               <button
                 onClick={handlePay}
-                disabled={payLoading}
+                disabled={payLoading || !user}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-60"
               >
                 Pay KES {selectedPlan.price}

@@ -5,7 +5,7 @@ import BASE_URL from "../../../baseURL.js";
 axios.defaults.baseURL = BASE_URL;
 
 export const fetchPlans = createAsyncThunk("plan/fetchPlans", async () => {
-  const res = await axios.get("/api/plans");
+  const res = await axios.get("/plans");
   return res.data.data;
 });
 
