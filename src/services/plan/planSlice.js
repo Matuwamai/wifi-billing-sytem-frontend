@@ -8,6 +8,24 @@ export const fetchPlans = createAsyncThunk("plan/fetchPlans", async () => {
   const res = await axios.get("/plans");
   return res.data.data;
 });
+export const createPlan = createAsyncThunk(
+  "plan/createPlan",
+  async (planData) => {
+    const res = await axios.post("/plans", planData);
+    return res.data.data;
+  }
+);
+export const updatePlan = createAsyncThunk(
+  "plan/updatePlan",
+  async ({ id, planData }) => {
+    const res = await axios.put(`/plans/${id}`, planData);
+    return res.data.data;
+  }
+);
+export const deletePlan = createAsyncThunk("plan/deletePlan", async (id) => {
+  const res = await axios.delete(`/plans/${id}`);
+  return res.data.message;
+});
 
 const planSlice = createSlice({
   name: "plan",
