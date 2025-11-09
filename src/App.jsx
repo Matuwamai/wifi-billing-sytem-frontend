@@ -4,6 +4,7 @@ import PlansPage from "./pages/PlanPage";
 import AdminPlansPage from "./pages/Admin/plans";
 import UserSubscriptionsPage from "./pages/Admin/UserSubscriptionsPage";
 import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
+import AdminPaymentPage from "./pages/Admin/AdminPaymentPage";
 function App() {
   return (
     <>
@@ -19,6 +20,7 @@ function App() {
             path="/admin/subscriptions"
             element={<AdminSubscriptionsPage />}
           />
+          <Route path="/admin/payments" element={<AdminPaymentPage />} />
         </Routes>
       </BrowserRouter>
     </>

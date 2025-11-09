@@ -14,11 +14,35 @@ export const startPayment = createAsyncThunk(
     return res.data;
   }
 );
+export const fetchAllPayments = createAsyncThunk(
+  "payment/fetchAllPayments",
+  async (params) => {
+    const res = await axios.get("/payments", { params });
+    return res.data;
+  }
+);
+
+export const fetchPaymentDetails = createAsyncThunk(
+  "payment/fetchPaymentDetails",
+  async (paymentId) => {
+    const res = await axios.get(`/payments/${paymentId}`);
+    return res.data;
+  }
+);
+
+export const clearSelectedPayment = createAsyncThunk(
+  "payment/clearSelectedPayment",
+  async () => {
+    return null;
+  }
+);
 
 const paymentSlice = createSlice({
   name: "payment",
   initialState: {
     payment: null,
+    payments: [],
+    selectedPayment: null,
     loading: false,
     success: false,
     error: null,
