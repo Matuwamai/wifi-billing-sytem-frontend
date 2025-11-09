@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import PlansPage from "./pages/PlanPage";
 import AdminPlansPage from "./pages/Admin/plans";
 import UserSubscriptionsPage from "./pages/Admin/UserSubscriptionsPage";
+import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
 function App() {
   return (
     <>
@@ -13,6 +14,10 @@ function App() {
           <Route
             path="/admin/user-subscriptions"
             element={<UserSubscriptionsPage />}
+          />
+          <Route
+            path="/admin/subscriptions"
+            element={<AdminSubscriptionsPage />}
           />
         </Routes>
       </BrowserRouter>
