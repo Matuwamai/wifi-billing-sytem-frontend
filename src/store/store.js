@@ -3,6 +3,7 @@ import authReducer from "../services/auth/authSlice";
 import planReducer from "../services/plan/planSlice";
 import paymentReducer from "../services/payment/paymentSlice";
 import subscriptionReducer from "../services/subscription/subscriptionSlice";
+import VoucherReducer from "../services/voucher/Vouchers";
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     plan: planReducer,
     payment: paymentReducer,
     subscription: subscriptionReducer,
+    voucher: VoucherReducer,
   },
 });
 

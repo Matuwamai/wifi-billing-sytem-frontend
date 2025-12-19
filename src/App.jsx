@@ -6,13 +6,13 @@ import UserSubscriptionsPage from "./pages/Admin/UserSubscriptionsPage";
 import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
 import AdminPaymentPage from "./pages/Admin/AdminPaymentPage";
 import Layout from "../src/componets/Layot"; // Fixed import
+import VoucherPage from "./pages/Admin/Voucher";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<PlansPage />} />
-
         {/* Admin routes with Layout wrapper */}
         <Route path="/admin" element={<Layout />}>
           <Route index element={<AdminPlansPage />} /> {/* /admin */}
@@ -30,6 +30,9 @@ function App() {
           {/* /admin/subscriptions */}
           <Route path="payments" element={<AdminPaymentPage />} />{" "}
           {/* /admin/payments */}
+          {/* ... other routes ... */}
+          <Route path="vouchers" element={<VoucherPage />} />{" "}
+          {/* /admin/vouchers */}
         </Route>
       </Routes>
     </BrowserRouter>
