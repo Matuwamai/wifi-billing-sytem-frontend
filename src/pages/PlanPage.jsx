@@ -15,6 +15,7 @@ import {
   Clock,
   Zap,
   Shield,
+  Smartphone,
 } from "lucide-react";
 
 const PlansPage = () => {
@@ -28,12 +29,57 @@ const PlansPage = () => {
   } = useSelector((state) => state.payment);
 
   const [phone, setPhone] = useState("");
+  const [macAddress, setMacAddress] = useState("");
+  const [deviceName, setDeviceName] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPlans());
   }, [dispatch]);
+
+  // Auto-detect device name and generate MAC placeholder
+  useEffect(() => {
+    const userAgent = navigator.userAgent;
+    let device = "Unknown Device";
+
+    if (/android/i.test(userAgent)) {
+      device = "Android Device";
+    } else if (/iPad|iPhone|iPod/.test(userAgent)) {
+      device = "iOS Device";
+    } else if (/Windows/.test(userAgent)) {
+      device = "Windows PC";
+    } else if (/Mac/.test(userAgent)) {
+      device = "Mac";
+    } else if (/Linux/.test(userAgent)) {
+      device = "Linux Device";
+    }
+
+    setDeviceName(device);
+
+    // Generate a pseudo MAC address from browser fingerprint
+    // Note: Real MAC address cannot be obtained from browser for privacy reasons
+    // This generates a consistent identifier based on user agent
+    const generateMacFromFingerprint = () => {
+      const fingerprint =
+        userAgent + navigator.language + screen.width + screen.height;
+      let hash = 0;
+      for (let i = 0; i < fingerprint.length; i++) {
+        hash = (hash << 5) - hash + fingerprint.charCodeAt(i);
+        hash = hash & hash;
+      }
+
+      // Convert to MAC-like format
+      const hex = Math.abs(hash).toString(16).padStart(12, "0").slice(0, 12);
+      return hex
+        .match(/.{1,2}/g)
+        .join(":")
+        .toUpperCase();
+    };
+
+    const generatedMac = generateMacFromFingerprint();
+    setMacAddress(generatedMac);
+  }, []);
 
   useEffect(() => {
     const initializeGuest = async () => {
@@ -65,12 +111,19 @@ const PlansPage = () => {
     if (!phone || phone.length < 10) {
       return alert("Enter a valid phone number (e.g. 07xxxxxxxx)");
     }
+    if (!macAddress) {
+      return alert(
+        "Device identification failed. Please refresh and try again."
+      );
+    }
 
     dispatch(
       startPayment({
         phone,
         userId: user.id,
         planId: selectedPlan.id,
+        macAddress,
+        deviceName,
       })
     );
   };
@@ -99,7 +152,7 @@ const PlansPage = () => {
             <Wifi className="text-white w-8 h-8 sm:w-10 sm:h-10" />
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3">
-            Choose Your Plan
+            Choose Your Package
           </h1>
           <p className="text-blue-200 text-sm sm:text-base max-w-2xl mx-auto px-4">
             Lightning-fast internet at your fingertips. Subscribe in seconds
@@ -119,6 +172,9 @@ const PlansPage = () => {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
               <span>24/7 Support</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>Support: 0714724209/0714169153</span>
             </div>
           </div>
         </div>
@@ -236,11 +292,17 @@ const PlansPage = () => {
                   {selectedPlan.durationType.toLowerCase()}(s)
                 </span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-2">
                 <span className="text-blue-300 text-sm">Total Amount</span>
                 <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                   KES {selectedPlan.price}
                 </span>
+              </div>
+              <div className="pt-2 border-t border-white/10">
+                <div className="flex items-center gap-2 text-xs text-blue-300">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Device: {deviceName}</span>
+                </div>
               </div>
             </div>
 

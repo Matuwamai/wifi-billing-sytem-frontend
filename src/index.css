@@ -1,1 +1,17 @@
 @import "tailwindcss";
+
+.planPage {
+  /* content: ""; */
+  background-image: url('./assets/images.jpeg');
+  position: absolute;
+  non-repeating: no-repeat;
+  background-size: cover;
+  background-position: center;
+  /* top: -50%; */
+  /* left: -50%; */
+  /* width: 200%; */
+  /* height: 200%; */
+  /* background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent 70%); */
+  /* animation: rotateBackground 20s linear infinite; */
+  /* z-index: 0; */
+}

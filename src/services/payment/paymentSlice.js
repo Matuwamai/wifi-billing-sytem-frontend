@@ -3,15 +3,25 @@ import axios from "axios";
 import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
+// paymentSlice.js
 export const startPayment = createAsyncThunk(
   "payment/startPayment",
-  async ({ phone, userId, planId }) => {
-    const res = await axios.post("/mpesa/pay", {
-      phone,
-      userId,
-      planId,
-    });
-    return res.data;
+  async (
+    { phone, userId, planId, macAddress, deviceName },
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await axios.post("/mpesa/pay", {
+        phone,
+        userId,
+        planId,
+        macAddress, // Add this
+        deviceName, // Add this
+      });
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Payment failed");
+    }
   }
 );
 export const fetchAllPayments = createAsyncThunk(

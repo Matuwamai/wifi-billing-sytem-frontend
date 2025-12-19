@@ -400,6 +400,9 @@ const AdminPlansPage = () => {
                     className="bg-white/10 border border-white/20 rounded-xl w-full p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   >
                     <option value="HOUR" className="bg-slate-800">
+                      Minute
+                    </option>
+                    <option value="HOUR" className="bg-slate-800">
                       Hour
                     </option>
                     <option value="DAY" className="bg-slate-800">
