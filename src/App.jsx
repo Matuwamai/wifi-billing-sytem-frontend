@@ -5,25 +5,34 @@ import AdminPlansPage from "./pages/Admin/plans";
 import UserSubscriptionsPage from "./pages/Admin/UserSubscriptionsPage";
 import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
 import AdminPaymentPage from "./pages/Admin/AdminPaymentPage";
+import Layout from "../src/componets/Layot"; // Fixed import
+
 function App() {
   return (
-    <>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<PlansPage />} />
-          <Route path="/admin/plans" element={<AdminPlansPage />} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<PlansPage />} />
+
+        {/* Admin routes with Layout wrapper */}
+        <Route path="/admin" element={<Layout />}>
+          <Route index element={<AdminPlansPage />} /> {/* /admin */}
+          <Route path="plans" element={<AdminPlansPage />} />{" "}
+          {/* /admin/plans */}
           <Route
-            path="/admin/user-subscriptions"
+            path="user-subscriptions"
             element={<UserSubscriptionsPage />}
-          />
+          />{" "}
+          {/* /admin/user-subscriptions */}
           <Route
-            path="/admin/subscriptions"
+            path="subscriptions"
             element={<AdminSubscriptionsPage />}
-          />
-          <Route path="/admin/payments" element={<AdminPaymentPage />} />
-        </Routes>
-      </BrowserRouter>
-    </>
+          />{" "}
+          {/* /admin/subscriptions */}
+          <Route path="payments" element={<AdminPaymentPage />} />{" "}
+          {/* /admin/payments */}
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
 

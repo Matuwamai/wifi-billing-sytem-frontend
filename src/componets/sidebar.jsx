@@ -18,7 +18,7 @@ const Sidebar = () => {
         {links.map((link) => (
           <a
             key={link.name}
-            href={`#${link.name.toLowerCase()}`}
+            href={`/admin/${link.name.toLowerCase()}`}
             className="flex items-center gap-3 p-2 rounded hover:bg-[#2A3B6D] transition-colors"
           >
             {link.icon}
@@ -26,6 +26,11 @@ const Sidebar = () => {
           </a>
         ))}
       </nav>
+      {/* <img
+        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIRNp-vzGebS9al1QV2RIzLgpfwtqGI8pqHw&s"
+        alt="Logo"
+        className="h-20 w-20 rounded-md mt-10 mx-auto"
+      /> */}
     </aside>
   );
 };
