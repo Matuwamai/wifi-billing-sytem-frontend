@@ -112,7 +112,7 @@ const AdminSubscriptionsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-6 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
@@ -132,7 +132,7 @@ const AdminSubscriptionsPage = () => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+          <div className="bg-gradient-to-r from-blue-900 to-cyan-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-blue-300 text-sm">Total</span>
               <Wifi className="w-5 h-5 text-blue-400" />
@@ -140,7 +140,7 @@ const AdminSubscriptionsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.total}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-green-500/30 p-4">
+          <div className="bg-gradient-to-r from-emerald-900 to-green-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-green-300 text-sm">Active</span>
               <CheckCircle className="w-5 h-5 text-green-400" />
@@ -148,7 +148,7 @@ const AdminSubscriptionsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.active}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-red-500/30 p-4">
+          <div className="bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-red-300 text-sm">Expired</span>
               <XCircle className="w-5 h-5 text-red-400" />
@@ -156,7 +156,7 @@ const AdminSubscriptionsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.expired}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-orange-500/30 p-4">
+          <div className="bg-gradient-to-r from-amber-900 to-yellow-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-orange-300 text-sm">Cancelled</span>
               <AlertCircle className="w-5 h-5 text-orange-400" />
@@ -257,7 +257,7 @@ const AdminSubscriptionsPage = () => {
 
         {/* Subscriptions Table */}
         {!loading && !error && filteredSubscriptions.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden">
+          <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
