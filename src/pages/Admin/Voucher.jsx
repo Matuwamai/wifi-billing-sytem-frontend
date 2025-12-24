@@ -6,16 +6,25 @@ import {
   deleteVoucher,
   expireVouchers,
   clearError,
+  clearLastCreated,
 } from "../../services/voucher/Vouchers";
-import { fetchPlans } from "../../services/plan/planSlice"; // Assuming you have this
+import { fetchPlans } from "../../services/plan/planSlice";
 
 const VoucherPage = () => {
   const dispatch = useDispatch();
-  const { vouchers, loading, error } = useSelector((state) => state.voucher);
-  const { plans } = useSelector((state) => state.plan); // Get plans for dropdown
+  const voucherState = useSelector((state) => state.voucher || {});
+  const {
+    vouchers = [],
+    loading = false,
+    error = null,
+    lastCreated = null,
+  } = voucherState;
+  const { plans } = useSelector((state) => state.plan);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [formData, setFormData] = useState({
     planId: "",
     quantity: 1,
@@ -30,7 +39,7 @@ const VoucherPage = () => {
 
   useEffect(() => {
     dispatch(fetchVouchers());
-    dispatch(fetchPlans()); // Fetch plans for dropdown
+    dispatch(fetchPlans());
   }, [dispatch]);
 
   useEffect(() => {
@@ -45,36 +54,64 @@ const VoucherPage = () => {
     }
   }, [vouchers]);
 
-  const handleCreateVoucher = (e) => {
-    e.preventDefault();
-    const adminId = localStorage.getItem("userId"); // Get admin ID from localStorage
-    dispatch(createVoucher({ ...formData, adminId }))
-      .unwrap()
-      .then(() => {
-        setShowCreateModal(false);
-        setFormData({ planId: "", quantity: 1, expiresInDays: 30 });
-        dispatch(fetchVouchers()); // Refresh list
-      });
-  };
+  // Auto-hide success message after 5 seconds
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(""), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
 
-  const handleDeleteVoucher = () => {
-    if (selectedVoucher) {
-      dispatch(deleteVoucher(selectedVoucher.id))
-        .unwrap()
-        .then(() => {
-          setShowDeleteModal(false);
-          setSelectedVoucher(null);
-          dispatch(fetchVouchers()); // Refresh list
-        });
+  const handleCreateVoucher = async (e) => {
+    e.preventDefault();
+    const adminId = localStorage.getItem("userId");
+
+    try {
+      const result = await dispatch(
+        createVoucher({ ...formData, adminId })
+      ).unwrap();
+      setShowCreateModal(false);
+      setFormData({ planId: "", quantity: 1, expiresInDays: 30 });
+      setSuccessMessage(result.message || "Vouchers created successfully!");
+
+      // Refresh the list after creating
+      dispatch(fetchVouchers());
+    } catch (error) {
+      console.error("Create voucher error:", error);
+      // Error is already handled in Redux
     }
   };
 
-  const handleExpireVouchers = () => {
-    dispatch(expireVouchers())
-      .unwrap()
-      .then(() => {
-        dispatch(fetchVouchers()); // Refresh list
-      });
+  const handleDeleteVoucher = async () => {
+    if (selectedVoucher) {
+      try {
+        const result = await dispatch(
+          deleteVoucher(selectedVoucher.id)
+        ).unwrap();
+        setShowDeleteModal(false);
+        setSelectedVoucher(null);
+        setSuccessMessage(result.message || "Voucher deleted successfully!");
+
+        // Refresh the list after deleting
+        dispatch(fetchVouchers());
+      } catch (error) {
+        console.error("Delete voucher error:", error);
+      }
+    }
+  };
+
+  const handleExpireVouchers = async () => {
+    try {
+      const result = await dispatch(expireVouchers()).unwrap();
+      setSuccessMessage(
+        result.message || `Expired ${result.count || 0} vouchers`
+      );
+
+      // Refresh the list after expiring
+      dispatch(fetchVouchers());
+    } catch (error) {
+      console.error("Expire vouchers error:", error);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -103,7 +140,7 @@ const VoucherPage = () => {
 
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code);
-    alert("Voucher code copied to clipboard!");
+    setSuccessMessage(`Voucher code ${code} copied to clipboard!`);
   };
 
   return (
@@ -178,7 +215,43 @@ const VoucherPage = () => {
           </svg>
           Expire Old Vouchers
         </button>
+
+        <button
+          onClick={() => dispatch(fetchVouchers())}
+          disabled={loading}
+          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg flex items-center gap-2 disabled:opacity-50"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+          Refresh
+        </button>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 p-4 bg-emerald-900/30 border border-emerald-800 rounded-lg text-emerald-300">
+          <div className="flex justify-between items-center">
+            <span>{successMessage}</span>
+            <button
+              onClick={() => setSuccessMessage("")}
+              className="text-emerald-400 hover:text-emerald-300"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (
@@ -199,25 +272,18 @@ const VoucherPage = () => {
       <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">All Vouchers</h2>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Search voucher codes..."
-              className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
-            />
-            <select className="bg-slate-900/50 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">All Status</option>
-              <option value="UNUSED">Available</option>
-              <option value="USED">Redeemed</option>
-              <option value="EXPIRED">Expired</option>
-            </select>
-          </div>
         </div>
 
         {loading ? (
           <div className="text-center py-8">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
             <p className="text-gray-400 mt-2">Loading vouchers...</p>
+          </div>
+        ) : vouchers.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">
+              No vouchers found. Create your first voucher!
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-700/50">
@@ -248,7 +314,7 @@ const VoucherPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {vouchers?.map((voucher) => (
+                {vouchers.map((voucher) => (
                   <tr
                     key={voucher.id}
                     className="hover:bg-slate-800/50 transition-colors"
@@ -375,7 +441,7 @@ const VoucherPage = () => {
                     {plans?.map((plan) => (
                       <option key={plan.id} value={plan.id}>
                         {plan.name} - {plan.durationValue} {plan.durationType}
-                        (s)
+                        (s) - KSH {plan.price}
                       </option>
                     ))}
                   </select>
