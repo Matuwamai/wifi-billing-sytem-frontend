@@ -1,92 +1,122 @@
+// services/auth/authSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../../../baseURL.js";
+import BASE_URL from "../../baseURL.js";
 
-const API_URL = BASE_URL;
+axios.defaults.baseURL = BASE_URL;
 
-// ✅ Utility to generate a unique device identifier
-const generateDeviceId = () => {
-  return (
-    "dev-" +
-    Math.random().toString(36).substring(2, 10) +
-    "-" +
-    Date.now().toString(36)
-  );
-};
-
-// ✅ Thunk: Create guest user (if device is new)
+// Create guest user
 export const createGuestUser = createAsyncThunk(
-  "user/createGuestUser",
+  "auth/createGuestUser",
   async (_, { rejectWithValue }) => {
     try {
-      let deviceId = localStorage.getItem("deviceId");
-      if (!deviceId) {
-        deviceId = generateDeviceId();
-        localStorage.setItem("deviceId", deviceId);
-      }
-
-      const res = await axios.post(`${API_URL}/user/guest`, { deviceId });
-
-      if (res.data.success) {
-        return res.data; // expected: { success: true, user: {...} }
-      } else {
-        return rejectWithValue(res.data.message || "Failed to create guest");
-      }
-    } catch (err) {
+      const res = await axios.post("/auth/guest");
+      return res.data;
+    } catch (error) {
       return rejectWithValue(
-        err.response?.data?.message || "Error creating guest user"
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create guest user"
       );
     }
   }
 );
 
-// ✅ Thunk: Login user (for registered accounts)
-export const loginUser = createAsyncThunk(
-  "user/loginUser",
-  async (credentials, { rejectWithValue }) => {
+// Login with M-Pesa code
+export const loginWithMpesaCode = createAsyncThunk(
+  "auth/loginWithMpesaCode",
+  async (loginData, { rejectWithValue }) => {
     try {
-      const res = await axios.post(`${API_URL}/user/login`, credentials);
-      if (res.data.success) {
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        return res.data;
-      } else {
-        return rejectWithValue(res.data.message || "Login failed");
-      }
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Login error");
+      console.log("📤 Sending M-Pesa login request:", loginData);
+      const res = await axios.post("/auth/login-mpesa", loginData);
+      console.log("✅ M-Pesa login response:", res.data);
+      return res.data;
+    } catch (error) {
+      console.error(
+        "❌ M-Pesa login error:",
+        error.response?.data || error.message
+      );
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to login with M-Pesa code"
+      );
     }
   }
 );
 
-// ✅ Thunk: Logout user
-export const logoutUser = createAsyncThunk("user/logoutUser", async () => {
-  localStorage.removeItem("user");
-  localStorage.removeItem("guestUser");
-  localStorage.removeItem("deviceId");
-  return true;
-});
+// Login with username and password
+export const loginWithUsername = createAsyncThunk(
+  "auth/loginWithUsername",
+  async (loginData, { rejectWithValue }) => {
+    try {
+      console.log("📤 Sending username login request:", {
+        ...loginData,
+        password: "***",
+      });
+      const res = await axios.post("/auth/login", loginData);
+      console.log("✅ Username login response:", res.data);
+      return res.data;
+    } catch (error) {
+      console.error(
+        "❌ Username login error:",
+        error.response?.data || error.message
+      );
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to login with username"
+      );
+    }
+  }
+);
 
-const initialState = {
-  user:
-    JSON.parse(localStorage.getItem("user")) ||
-    JSON.parse(localStorage.getItem("guestUser")) ||
-    null,
-  loading: false,
-  error: null,
-};
+// Logout
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      // Clear local storage
+      localStorage.removeItem("guestUser");
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      return { success: true };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to logout");
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: "auth",
-  initialState,
+  initialState: {
+    user: null,
+    subscription: null,
+    session: null,
+    loading: false,
+    error: null,
+    loginSuccess: false,
+  },
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
-      localStorage.setItem("guestUser", JSON.stringify(action.payload));
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+    clearLoginSuccess: (state) => {
+      state.loginSuccess = false;
+    },
+    setSubscription: (state, action) => {
+      state.subscription = action.payload;
+    },
+    setSession: (state, action) => {
+      state.session = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // ✅ Guest user
+      // Create guest user
       .addCase(createGuestUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -94,33 +124,85 @@ const authSlice = createSlice({
       .addCase(createGuestUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
-        localStorage.setItem("guestUser", JSON.stringify(action.payload.user));
       })
       .addCase(createGuestUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload || "Failed to create guest user";
       })
 
-      // ✅ Login
-      .addCase(loginUser.pending, (state) => {
+      // Login with M-Pesa code
+      .addCase(loginWithMpesaCode.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.loginSuccess = false;
       })
-      .addCase(loginUser.fulfilled, (state, action) => {
+      .addCase(loginWithMpesaCode.fulfilled, (state, action) => {
         state.loading = false;
+        state.loginSuccess = true;
         state.user = action.payload.user;
+        state.subscription = action.payload.subscription;
+        state.session = action.payload.session;
+
+        // Store user in localStorage
+        if (action.payload.user) {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+        }
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(loginWithMpesaCode.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.loginSuccess = false;
+        state.error = action.payload || "Failed to login with M-Pesa code";
       })
 
-      // ✅ Logout
-      .addCase(logoutUser.fulfilled, (state) => {
+      // Login with username
+      .addCase(loginWithUsername.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.loginSuccess = false;
+      })
+      .addCase(loginWithUsername.fulfilled, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = true;
+        state.user = action.payload.user;
+        state.subscription = action.payload.subscription;
+        state.session = action.payload.session;
+
+        // Store user in localStorage
+        if (action.payload.user) {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+        }
+      })
+      .addCase(loginWithUsername.rejected, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = false;
+        state.error = action.payload || "Failed to login with username";
+      })
+
+      // Logout
+      .addCase(logout.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.loading = false;
         state.user = null;
+        state.subscription = null;
+        state.session = null;
+        state.error = null;
+        state.loginSuccess = false;
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to logout";
       });
   },
 });
 
-export const { setUser } = authSlice.actions;
+export const {
+  setUser,
+  clearError,
+  clearLoginSuccess,
+  setSubscription,
+  setSession,
+} = authSlice.actions;
+
 export default authSlice.reducer;

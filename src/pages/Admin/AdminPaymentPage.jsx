@@ -4,7 +4,7 @@ import {
   fetchAllPayments,
   fetchPaymentDetails,
   clearSelectedPayment,
-} from "../../services/payment/paymentSlice.js";
+} from "../../services/payment/paymentSlice";
 import {
   Loader2,
   CreditCard,
@@ -25,16 +25,34 @@ import {
 
 const AdminPaymentsPage = () => {
   const dispatch = useDispatch();
-  const { payments, selectedPayment, loading, detailsLoading, error } =
-    useSelector((state) => state.payment);
+  const {
+    payments = [],
+    selectedPayment,
+    loading,
+    detailsLoading,
+    error,
+    data,
+  } = useSelector((state) => state.payment || {});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
   useEffect(() => {
+    console.log("Component mounted, fetching payments...");
     dispatch(fetchAllPayments());
   }, [dispatch]);
+
+  // Debug: Log the state
+  useEffect(() => {
+    console.log("Current payments state:", {
+      payments,
+      paymentsLength: payments?.length,
+      loading,
+      error,
+      data,
+    });
+  }, [payments, loading, error, data]);
 
   // Debounce search
   useEffect(() => {
@@ -47,16 +65,20 @@ const AdminPaymentsPage = () => {
   // Fetch with search
   useEffect(() => {
     if (debouncedSearch !== undefined) {
-      dispatch(fetchAllPayments({ search: debouncedSearch }));
+      const params = {};
+      if (debouncedSearch) params.search = debouncedSearch;
+      console.log("Fetching with params:", params);
+      dispatch(fetchAllPayments(params));
     }
   }, [debouncedSearch, dispatch]);
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      COMPLETED: {
+      SUCCESS: {
+        // Changed from COMPLETED to SUCCESS
         icon: CheckCircle,
         className: "bg-green-500/20 text-green-300 border-green-500/50",
-        text: "Completed",
+        text: "Success",
       },
       PENDING: {
         icon: Clock,
@@ -84,6 +106,7 @@ const AdminPaymentsPage = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
@@ -97,18 +120,20 @@ const AdminPaymentsPage = () => {
     return new Intl.NumberFormat("en-KE", {
       style: "currency",
       currency: "KES",
-    }).format(amount);
+      minimumFractionDigits: 0,
+    }).format(amount || 0);
   };
 
-  // Statistics
+  // Statistics - handle empty or undefined payments
   const stats = {
-    total: payments.length,
-    completed: payments.filter((p) => p.status === "COMPLETED").length,
-    pending: payments.filter((p) => p.status === "PENDING").length,
-    failed: payments.filter((p) => p.status === "FAILED").length,
-    totalAmount: payments
-      .filter((p) => p.status === "COMPLETED")
-      .reduce((sum, p) => sum + (p.amount || 0), 0),
+    total: payments?.length || 0,
+    completed: payments?.filter((p) => p.status === "SUCCESS").length || 0,
+    pending: payments?.filter((p) => p.status === "PENDING").length || 0,
+    failed: payments?.filter((p) => p.status === "FAILED").length || 0,
+    totalAmount:
+      payments
+        ?.filter((p) => p.status === "SUCCESS")
+        .reduce((sum, p) => sum + (p.amount || 0), 0) || 0,
   };
 
   const handleViewDetails = async (paymentId) => {
@@ -122,6 +147,11 @@ const AdminPaymentsPage = () => {
   };
 
   const exportToCSV = () => {
+    if (!payments || payments.length === 0) {
+      alert("No payments to export");
+      return;
+    }
+
     const headers = [
       "Phone",
       "Plan",
@@ -136,7 +166,7 @@ const AdminPaymentsPage = () => {
       payment.amount || 0,
       payment.mpesaCode || "N/A",
       payment.status,
-      formatDate(payment.createdAt),
+      formatDate(payment.transactionDate || payment.createdAt),
     ]);
 
     const csv = [headers, ...rows].map((row) => row.join(",")).join("\n");
@@ -150,6 +180,17 @@ const AdminPaymentsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-6 relative overflow-hidden">
+      {/* Debug info - remove after testing */}
+      <div className="mb-4 p-3 bg-blue-900/20 text-blue-300 text-xs rounded-lg">
+        <div className="flex items-center gap-2">
+          <span>Debug Info:</span>
+          <span>Payments: {payments?.length || 0}</span>
+          <span>Loading: {loading ? "Yes" : "No"}</span>
+          <span>Error: {error ? "Yes" : "No"}</span>
+        </div>
+        {error && <div className="mt-1 text-red-300">Error: {error}</div>}
+      </div>
+
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
@@ -238,34 +279,50 @@ const AdminPaymentsPage = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center h-64">
-            <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
+          <div className="flex flex-col justify-center items-center h-64">
+            <Loader2 className="w-12 h-12 text-blue-400 animate-spin mb-4" />
+            <p className="text-blue-300">Loading payments...</p>
           </div>
         )}
 
         {/* Error State */}
-        {error && (
-          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300">
+        {error && !loading && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 text-red-300 mb-6">
             <p className="font-semibold">Error loading payments</p>
             <p className="text-sm">{error}</p>
+            <button
+              onClick={() => dispatch(fetchAllPayments())}
+              className="mt-2 px-4 py-2 bg-red-500/30 hover:bg-red-500/40 text-white rounded-lg transition-colors text-sm"
+            >
+              Retry
+            </button>
           </div>
         )}
 
         {/* Empty State */}
-        {!loading && !error && payments.length === 0 && (
+        {!loading && !error && (!payments || payments.length === 0) && (
           <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-12 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-cyan-400/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <CreditCard className="w-10 h-10 text-blue-300" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">
-              No Payments Yet
+              No Payments Found
             </h3>
-            <p className="text-blue-300">No payment transactions found.</p>
+            <p className="text-blue-300">
+              No payment transactions found in the database.
+            </p>
+            {data && (
+              <div className="mt-4 p-3 bg-blue-900/20 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  API Response: {JSON.stringify(data)}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
         {/* Payments Table */}
-        {!loading && !error && payments.length > 0 && (
+        {!loading && !error && payments && payments.length > 0 && (
           <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
@@ -330,7 +387,9 @@ const AdminPaymentsPage = () => {
                         </span>
                       </td>
                       <td className="p-4 text-blue-200 text-sm">
-                        {formatDate(payment.createdAt)}
+                        {formatDate(
+                          payment.transactionDate || payment.createdAt
+                        )}
                       </td>
                       <td className="p-4">{getStatusBadge(payment.status)}</td>
                       <td className="p-4">
@@ -388,7 +447,9 @@ const AdminPaymentsPage = () => {
                     <div className="bg-white/5 rounded-lg p-2 col-span-2">
                       <span className="text-blue-300 text-xs">Date</span>
                       <p className="text-white text-xs">
-                        {formatDate(payment.createdAt)}
+                        {formatDate(
+                          payment.transactionDate || payment.createdAt
+                        )}
                       </p>
                     </div>
                   </div>
@@ -407,7 +468,7 @@ const AdminPaymentsPage = () => {
         )}
 
         {/* Results Count */}
-        {!loading && !error && payments.length > 0 && (
+        {!loading && !error && payments && payments.length > 0 && (
           <div className="mt-4 text-center text-blue-300 text-sm">
             Showing {payments.length} payment(s)
           </div>
@@ -425,117 +486,132 @@ const AdminPaymentsPage = () => {
               <X className="w-5 h-5" />
             </button>
 
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl mb-4 shadow-lg shadow-blue-500/50">
-                <CreditCard className="text-white w-8 h-8" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-                Payment Details
-              </h2>
-              <div className="inline-block">
-                {getStatusBadge(selectedPayment.status)}
-              </div>
-            </div>
-
             {detailsLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Transaction Info */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    Transaction Information
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Amount:</span>
-                      <span className="text-green-400 font-bold">
-                        {formatCurrency(selectedPayment.amount || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">
-                        M-Pesa Code:
-                      </span>
-                      <span className="text-white font-mono">
-                        {selectedPayment.mpesaCode || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Date:</span>
-                      <span className="text-white">
-                        {formatDate(selectedPayment.createdAt)}
-                      </span>
-                    </div>
+              <>
+                <div className="text-center mb-6">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl mb-4 shadow-lg shadow-blue-500/50">
+                    <CreditCard className="text-white w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                    Payment Details
+                  </h2>
+                  <div className="inline-block">
+                    {getStatusBadge(selectedPayment.status)}
                   </div>
                 </div>
 
-                {/* User Info */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    User Information
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Phone:</span>
-                      <span className="text-white font-medium">
-                        {selectedPayment.user?.phone || "N/A"}
-                      </span>
-                    </div>
-                    {selectedPayment.user?.deviceName && (
+                <div className="space-y-4">
+                  {/* Transaction Info */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
+                      <Hash className="w-4 h-4" />
+                      Transaction Information
+                    </h3>
+                    <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-blue-200 text-sm">Device:</span>
-                        <span className="text-white">
-                          {selectedPayment.user.deviceName}
+                        <span className="text-blue-200 text-sm">Amount:</span>
+                        <span className="text-green-400 font-bold">
+                          {formatCurrency(selectedPayment.amount || 0)}
                         </span>
                       </div>
-                    )}
-                    {selectedPayment.user?.macAddress && (
                       <div className="flex justify-between">
                         <span className="text-blue-200 text-sm">
-                          MAC Address:
+                          M-Pesa Code:
                         </span>
-                        <span className="text-white font-mono text-sm">
-                          {selectedPayment.user.macAddress}
+                        <span className="text-white font-mono">
+                          {selectedPayment.mpesaCode || "N/A"}
                         </span>
                       </div>
-                    )}
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">Date:</span>
+                        <span className="text-white">
+                          {formatDate(
+                            selectedPayment.transactionDate ||
+                              selectedPayment.createdAt
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">
+                          Payment ID:
+                        </span>
+                        <span className="text-white font-mono">
+                          {selectedPayment.id}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Plan Info */}
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
-                    <Wifi className="w-4 h-4" />
-                    Plan Information
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Plan Name:</span>
-                      <span className="text-white font-medium">
-                        {selectedPayment.plan?.name || "N/A"}
-                      </span>
+                  {/* User Info */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
+                      <Phone className="w-4 h-4" />
+                      User Information
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">Phone:</span>
+                        <span className="text-white font-medium">
+                          {selectedPayment.user?.phone || "N/A"}
+                        </span>
+                      </div>
+                      {selectedPayment.user?.deviceName && (
+                        <div className="flex justify-between">
+                          <span className="text-blue-200 text-sm">Device:</span>
+                          <span className="text-white">
+                            {selectedPayment.user.deviceName}
+                          </span>
+                        </div>
+                      )}
+                      {selectedPayment.user?.macAddress && (
+                        <div className="flex justify-between">
+                          <span className="text-blue-200 text-sm">
+                            MAC Address:
+                          </span>
+                          <span className="text-white font-mono text-sm">
+                            {selectedPayment.user.macAddress}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Duration:</span>
-                      <span className="text-white">
-                        {selectedPayment.plan?.durationValue}{" "}
-                        {selectedPayment.plan?.durationType.toLowerCase()}(s)
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-blue-200 text-sm">Price:</span>
-                      <span className="text-white font-semibold">
-                        {formatCurrency(selectedPayment.plan?.price || 0)}
-                      </span>
+                  </div>
+
+                  {/* Plan Info */}
+                  <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <h3 className="text-blue-300 font-semibold mb-3 flex items-center gap-2">
+                      <Wifi className="w-4 h-4" />
+                      Plan Information
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">
+                          Plan Name:
+                        </span>
+                        <span className="text-white font-medium">
+                          {selectedPayment.plan?.name || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">Duration:</span>
+                        <span className="text-white">
+                          {selectedPayment.plan?.durationValue}{" "}
+                          {selectedPayment.plan?.durationType?.toLowerCase()}(s)
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-blue-200 text-sm">Price:</span>
+                        <span className="text-white font-semibold">
+                          {formatCurrency(selectedPayment.plan?.price || 0)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
 
             <button

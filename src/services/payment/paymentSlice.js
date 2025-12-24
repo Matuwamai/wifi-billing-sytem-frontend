@@ -4,6 +4,11 @@ import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
 // paymentSlice.js
+const getAuthHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
 export const startPayment = createAsyncThunk(
   "payment/startPayment",
   async (
@@ -64,8 +69,6 @@ export const fetchPaymentDetails = createAsyncThunk(
 //     return null;
 //   }
 // );
-
-// paymentSlice.js
 
 const paymentSlice = createSlice({
   name: "payment",
