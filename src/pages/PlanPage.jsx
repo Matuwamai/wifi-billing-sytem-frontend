@@ -5,7 +5,14 @@ import {
   startPayment,
   resetPaymentState,
 } from "../services/payment/paymentSlice.js";
-import { createGuestUser, setUser } from "../services/auth/authSlice.js";
+import {
+  createGuestUser,
+  setUser,
+  loginWithMpesaCode,
+  loginWithUsername,
+  clearError as clearAuthError,
+  clearLoginSuccess,
+} from "../services/auth/authSlice.js";
 import { redeemVoucher } from "../services/voucher/Vouchers.js";
 import {
   Loader2,
@@ -26,13 +33,21 @@ import {
 const PlansPage = () => {
   const dispatch = useDispatch();
   const { plans, loading: plansLoading } = useSelector((state) => state.plan);
-  const { user, loading: userLoading } = useSelector((state) => state.auth);
+  const {
+    user,
+    loading: userLoading,
+    loginLoading = false, // Add default value
+    error: authError,
+    subscription: userSubscription,
+    session: userSession,
+  } = useSelector((state) => state.auth || {}); // Add fallback
   const {
     loading: payLoading,
     success,
     error,
   } = useSelector((state) => state.payment);
 
+  // Add these missing states
   const [phone, setPhone] = useState("");
   const [macAddress, setMacAddress] = useState("");
   const [deviceName, setDeviceName] = useState("");
@@ -50,8 +65,29 @@ const PlansPage = () => {
   const [mpesaCode, setMpesaCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginSuccess, setLoginSuccessLocal] = useState("");
   const [loginError, setLoginError] = useState("");
+
+  // Handle login success
+  useEffect(() => {
+    if (loginSuccess && userSubscription) {
+      setLoginSuccessLocal(
+        `Welcome back! You have ${userSubscription.remainingTime} remaining on your ${userSubscription.plan} plan.`
+      );
+
+      // Clear form
+      setMpesaCode("");
+      setUsername("");
+      setPassword("");
+      setLoginError("");
+
+      // Auto-hide success message after 8 seconds
+      setTimeout(() => {
+        setLoginSuccessLocal("");
+        dispatch(clearLoginSuccess());
+      }, 8000);
+    }
+  }, [loginSuccess, userSubscription, dispatch]);
 
   useEffect(() => {
     dispatch(fetchPlans());
@@ -195,26 +231,65 @@ const PlansPage = () => {
 
   const handleMpesaLogin = async (e) => {
     e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
 
-    // TODO: Implement M-Pesa code login logic
-    setTimeout(() => {
-      setLoginError("M-Pesa code login coming soon!");
-      setLoginLoading(false);
-    }, 1000);
+    if (!mpesaCode || mpesaCode.length < 8) {
+      setLoginError("Please enter a valid M-Pesa transaction code");
+      return;
+    }
+
+    if (!macAddress) {
+      setLoginError("Device identification failed. Please refresh.");
+      return;
+    }
+
+    try {
+      await dispatch(
+        loginWithMpesaCode({
+          mpesaCode: mpesaCode.toUpperCase(),
+          macAddress,
+          ipAddress: window.location.hostname,
+          deviceName,
+        })
+      ).unwrap();
+
+      // Success is handled by useEffect above
+    } catch (error) {
+      setLoginError(
+        error || "Failed to login. Please check your M-Pesa code and try again."
+      );
+    }
   };
 
   const handleUsernameLogin = async (e) => {
     e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
 
-    // TODO: Implement username/password login logic
-    setTimeout(() => {
-      setLoginError("Username/Password login coming soon!");
-      setLoginLoading(false);
-    }, 1000);
+    if (!username || !password) {
+      setLoginError("Please enter both username and password");
+      return;
+    }
+
+    if (!macAddress) {
+      setLoginError("Device identification failed. Please refresh.");
+      return;
+    }
+
+    try {
+      await dispatch(
+        loginWithUsername({
+          username,
+          password,
+          macAddress,
+          ipAddress: window.location.hostname,
+          deviceName,
+        })
+      ).unwrap();
+
+      // Success is handled by useEffect above
+    } catch (error) {
+      setLoginError(
+        error || "Failed to login. Please check your credentials and try again."
+      );
+    }
   };
 
   return (
@@ -224,6 +299,7 @@ const PlansPage = () => {
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-500"></div>
       </div>
+
       <div className="relative z-10">
         <div className="text-center py-8 px-4 sm:py-12">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -481,18 +557,26 @@ const PlansPage = () => {
                   </p>
                 </div>
 
-                {loginError && (
+                {loginSuccess && loginSuccessLocal && (
+                  <div className="flex items-center justify-center gap-2 text-green-400 bg-green-500/10 rounded-lg p-3 border border-green-500/20 mb-4">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="text-sm">{loginSuccessLocal}</span>
+                  </div>
+                )}
+
+                {(loginError || authError) && (
                   <div className="flex items-center justify-center gap-2 text-amber-400 bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
-                    <span className="text-sm">{loginError}</span>
+                    <XCircle className="w-4 h-4" />
+                    <span className="text-sm">{loginError || authError}</span>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={loginLoading}
+                  disabled={userLoading}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-500 text-white py-3 sm:py-4 rounded-xl hover:from-cyan-500 hover:to-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/30 font-semibold text-base"
                 >
-                  {loginLoading ? (
+                  {userLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Logging in...
@@ -519,7 +603,7 @@ const PlansPage = () => {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="bg-white/10 border border-white/20 rounded-xl w-full p-3 sm:p-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-white placeholder-blue-300/50 transition-all"
-                    disabled={loginLoading}
+                    disabled={userLoading}
                   />
                 </div>
 
@@ -533,22 +617,23 @@ const PlansPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="bg-white/10 border border-white/20 rounded-xl w-full p-3 sm:p-4 focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none text-white placeholder-blue-300/50 transition-all"
-                    disabled={loginLoading}
+                    disabled={userLoading}
                   />
                 </div>
 
-                {loginError && (
+                {(loginError || authError) && (
                   <div className="flex items-center justify-center gap-2 text-amber-400 bg-amber-500/10 rounded-lg p-3 border border-amber-500/20">
-                    <span className="text-sm">{loginError}</span>
+                    <XCircle className="w-4 h-4" />
+                    <span className="text-sm">{loginError || authError}</span>
                   </div>
                 )}
 
                 <button
                   type="submit"
-                  disabled={loginLoading}
+                  disabled={userLoading}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-500 text-white py-3 sm:py-4 rounded-xl hover:from-cyan-500 hover:to-blue-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/30 font-semibold text-base"
                 >
-                  {loginLoading ? (
+                  {userLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
                       Logging in...
