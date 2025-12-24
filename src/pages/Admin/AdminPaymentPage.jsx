@@ -149,7 +149,7 @@ const AdminPaymentsPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-6 relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
@@ -169,7 +169,7 @@ const AdminPaymentsPage = () => {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 p-4">
+          <div className="bg-gradient-to-r from-blue-900 to-cyan-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-blue-300 text-sm">Total</span>
               <CreditCard className="w-5 h-5 text-blue-400" />
@@ -177,7 +177,7 @@ const AdminPaymentsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.total}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-green-500/30 p-4">
+          <div className="bg-gradient-to-r from-emerald-900 to-green-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-green-300 text-sm">Completed</span>
               <CheckCircle className="w-5 h-5 text-green-400" />
@@ -185,7 +185,7 @@ const AdminPaymentsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.completed}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-yellow-500/30 p-4">
+          <div className="bg-gradient-to-r from-purple-900 to-pink-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-yellow-300 text-sm">Pending</span>
               <Clock className="w-5 h-5 text-yellow-400" />
@@ -193,7 +193,7 @@ const AdminPaymentsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.pending}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-red-500/30 p-4">
+          <div className="bg-gradient-to-r from-amber-900 to-yellow-900 p-4 rounded-xl border border-white/10 shadow-lg">
             <div className="flex items-center justify-between mb-2">
               <span className="text-red-300 text-sm">Failed</span>
               <XCircle className="w-5 h-5 text-red-400" />
@@ -201,7 +201,7 @@ const AdminPaymentsPage = () => {
             <p className="text-2xl font-bold text-white">{stats.failed}</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-md rounded-xl border border-cyan-500/30 p-4 col-span-2 lg:col-span-1">
+          <div className="p-4  bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-xl border border-white/10 shadow-lg ">
             <div className="flex items-center justify-between mb-2">
               <span className="text-cyan-300 text-sm">Revenue</span>
               <DollarSign className="w-5 h-5 text-cyan-400" />
@@ -266,7 +266,7 @@ const AdminPaymentsPage = () => {
 
         {/* Payments Table */}
         {!loading && !error && payments.length > 0 && (
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden">
+          <div className="bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50 p-6">
             {/* Desktop Table */}
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
