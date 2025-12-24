@@ -180,17 +180,6 @@ const AdminPaymentsPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-gray-900 p-6 relative overflow-hidden">
-      {/* Debug info - remove after testing */}
-      <div className="mb-4 p-3 bg-blue-900/20 text-blue-300 text-xs rounded-lg">
-        <div className="flex items-center gap-2">
-          <span>Debug Info:</span>
-          <span>Payments: {payments?.length || 0}</span>
-          <span>Loading: {loading ? "Yes" : "No"}</span>
-          <span>Error: {error ? "Yes" : "No"}</span>
-        </div>
-        {error && <div className="mt-1 text-red-300">Error: {error}</div>}
-      </div>
-
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
