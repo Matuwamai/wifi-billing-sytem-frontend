@@ -7,6 +7,7 @@ import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
 import AdminPaymentPage from "./pages/Admin/AdminPaymentPage";
 import Layout from "../src/componets/Layot"; // Fixed import
 import VoucherPage from "./pages/Admin/Voucher";
+import UsersPage from "./pages/Admin/userPage";
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
           {/* ... other routes ... */}
           <Route path="vouchers" element={<VoucherPage />} />{" "}
           {/* /admin/vouchers */}
+          <Route path="users" element={<UsersPage />} /> {/* /admin/users */}
         </Route>
       </Routes>
     </BrowserRouter>

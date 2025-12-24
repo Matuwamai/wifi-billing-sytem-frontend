@@ -4,7 +4,11 @@ import axios from "axios";
 import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
-
+const getAuthHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
 // Create guest user
 export const createGuestUser = createAsyncThunk(
   "auth/createGuestUser",
@@ -86,35 +90,11 @@ export const logout = createAsyncThunk(
     }
   }
 );
-export const fetchAllUsers = createAsyncThunk(
-  "user/fetchAllUsers",
-  async (_, { rejectWithValue }) => {
-    try {
-      console.log("Fetching users...");
-      const res = await axios.get("/users/list", getAuthHeaders());
-      console.log("Users API response:", res.data);
-      return res.data;
-    } catch (error) {
-      console.error("Users fetch error:", error);
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch users"
-      );
-    }
-  }
-);
 
-export const fetchUserProfile = createAsyncThunk(
-  "user/fetchUserProfile",
-  async (userId, { rejectWithValue }) => {
-    try {
-      console.log("Fetching user profile for ID:", userId);
-      const res = await axios.get(`/users/profile/${userId}`, getAuthHeaders());
-      return res.data;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch user profile"
-      );
-    }
+export const clearSelectedUser = createAsyncThunk(
+  "user/clearSelectedUser",
+  async () => {
+    return null;
   }
 );
 
@@ -224,31 +204,6 @@ const authSlice = createSlice({
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to logout";
-      })
-      .addCase(fetchAllUsers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchAllUsers.fulfilled, (state, action) => {
-        state.loading = false;
-        state.users = action.payload.users || action.payload.data || [];
-      })
-      .addCase(fetchAllUsers.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to fetch users";
-      })
-      // Fetch user profile
-      .addCase(fetchUserProfile.pending, (state) => {
-        state.detailsLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchUserProfile.fulfilled, (state, action) => {
-        state.detailsLoading = false;
-        state.selectedUser = action.payload.user || action.payload.data;
-      })
-      .addCase(fetchUserProfile.rejected, (state, action) => {
-        state.detailsLoading = false;
-        state.error = action.payload || "Failed to fetch user profile";
       });
   },
 });
