@@ -14,7 +14,7 @@ import {
   Home,
   Shield,
 } from "lucide-react";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth } from "../context/AuthContex";
 
 const Navbar = ({ onMenuClick, showMenuButton = true }) => {
   const [searchOpen, setSearchOpen] = useState(false);

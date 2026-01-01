@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, LogIn, Shield } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../context/AuthContex";
 
 const LoginPage = () => {
   const [phone, setPhone] = useState("");
