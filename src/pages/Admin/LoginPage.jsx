@@ -58,7 +58,7 @@ const LoginPage = () => {
       if (result.success) {
         // Force immediate navigation after successful login
         setTimeout(() => {
-          navigate("/admin", { replace: true });
+          navigate("/admin/plans", { replace: true });
         }, 500); // Give Redux time to update state
       } else {
         setIsSubmitting(false);

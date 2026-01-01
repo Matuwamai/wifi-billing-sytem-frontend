@@ -16,7 +16,6 @@ import {
   Wifi,
   Clock,
   DollarSign,
-  Calendar,
   X,
 } from "lucide-react";
 
@@ -25,7 +24,7 @@ const AdminPlansPage = () => {
   const { plans, loading, error } = useSelector((state) => state.plan);
 
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // 'create' or 'edit'
+  const [modalMode, setModalMode] = useState("create");
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [notification, setNotification] = useState(null);
 
@@ -131,6 +130,12 @@ const AdminPlansPage = () => {
     } catch (err) {
       showNotification("error", err.message || "Failed to delete plan");
     }
+  };
+
+  // Helper function to format duration display
+  const formatDuration = (value, type) => {
+    const typeLabel = type.toLowerCase();
+    return `${value} ${typeLabel}${value !== 1 ? "s" : ""}`;
   };
 
   return (
@@ -244,8 +249,10 @@ const AdminPlansPage = () => {
                           <div className="flex items-center gap-2 text-blue-200">
                             <Clock className="w-4 h-4" />
                             <span>
-                              {plan.durationValue}{" "}
-                              {plan.durationType.toLowerCase()}(s)
+                              {formatDuration(
+                                plan.durationValue,
+                                plan.durationType
+                              )}
                             </span>
                           </div>
                         </td>
@@ -325,8 +332,10 @@ const AdminPlansPage = () => {
                       <div className="flex items-center gap-2 text-blue-200">
                         <Clock className="w-4 h-4" />
                         <span>
-                          {plan.durationValue} {plan.durationType.toLowerCase()}
-                          (s)
+                          {formatDuration(
+                            plan.durationValue,
+                            plan.durationType
+                          )}
                         </span>
                       </div>
                       {plan.description && (
@@ -399,7 +408,7 @@ const AdminPlansPage = () => {
                     onChange={handleInputChange}
                     className="bg-white/10 border border-white/20 rounded-xl w-full p-3 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                   >
-                    <option value="HOUR" className="bg-slate-800">
+                    <option value="MINUTE" className="bg-slate-800">
                       Minute
                     </option>
                     <option value="HOUR" className="bg-slate-800">
