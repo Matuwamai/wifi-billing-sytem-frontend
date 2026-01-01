@@ -22,7 +22,7 @@ const Unauthorized = () => {
     if (user?.UserRole === "ADMIN") {
       navigate("/admin");
     } else if (isAuthenticated) {
-      navigate("/dashboard");
+      navigate("/");
     } else {
       navigate("/");
     }
@@ -106,7 +106,7 @@ const Unauthorized = () => {
                       </span>
                       <span className="text-xs text-slate-500">•</span>
                       <span className="text-xs text-slate-500">
-                        ID: {user.id?.substring(0, 8)}...
+                        {/* ID: {user.id?.substring(0, 8)}... */}
                       </span>
                     </div>
                   </div>
@@ -291,7 +291,7 @@ const Unauthorized = () => {
             <span>
               Ref:{" "}
               <code className="bg-slate-800/50 px-2 py-1 rounded">
-                ACC_DENIED_{user?.id?.substring(0, 6) || "GUEST"}
+                {/* ACC_DENIED_{user?.id?.substring(0, 6) || "GUEST"} */}
               </code>
             </span>
             <span>•</span>

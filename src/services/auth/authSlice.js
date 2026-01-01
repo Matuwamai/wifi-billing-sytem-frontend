@@ -12,9 +12,14 @@ const getAuthHeaders = () => ({
 // Create guest user
 export const createGuestUser = createAsyncThunk(
   "auth/createGuestUser",
-  async (_, { rejectWithValue }) => {
+  async ({ deviceName, phone = null }, { rejectWithValue }) => {
     try {
-      const res = await axios.post("/auth/guest");
+      // Send deviceName and phone to backend
+      const res = await axios.post("/user/guest", {
+        deviceName,
+        phone,
+        macAddress: deviceName, // Using deviceName as a fallback for mac
+      });
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -117,6 +122,8 @@ const authSlice = createSlice({
     subscription: null,
     session: null,
     loading: false,
+    deviceName: null,
+    phone: null,
     error: null,
     loginSuccess: false,
   },

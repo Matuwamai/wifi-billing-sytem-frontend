@@ -32,7 +32,7 @@ function App() {
             {/* Public Routes */}
             <Route path="/admin/login" element={<LoginPage />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/plans" element={<PlansPage />} />
+            <Route path="/" element={<PlansPage />} />
 
             {/* Protected Admin Routes */}
             <Route
@@ -60,8 +60,11 @@ function App() {
             </Route>
 
             {/* Fallback Routes */}
-            <Route path="/" element={<Navigate to="/admin/login" replace />} />
-            <Route path="*" element={<Navigate to="/admin/login" replace />} />
+            {/* // In your App.jsx - add this route */}
+            <Route
+              path="/login"
+              element={<Navigate to="/admin/login" replace />}
+            />
           </Routes>
         </AuthProvider>
       </Router>
