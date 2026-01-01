@@ -101,7 +101,7 @@ const Sidebar = ({ onClose }) => {
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-400 rounded-full"></div>
           <div>
-            <p className="text-sm font-medium text-white">Admin User</p>
+            <p className="text-sm font-medium text-white">Admin Issa</p>
             <p className="text-xs text-slate-400">Online</p>
           </div>
         </div>

@@ -5,6 +5,7 @@ import paymentReducer from "../services/payment/paymentSlice";
 import subscriptionReducer from "../services/subscription/subscriptionSlice";
 import VoucherReducer from "../services/voucher/Vouchers";
 import userReducer from "../services/users/userSlices";
+import analyticReducer from "../services/Analytics/analyticSlices";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     subscription: subscriptionReducer,
     voucher: VoucherReducer,
     user: userReducer,
+    analytic: analyticReducer,
   },
 });
 

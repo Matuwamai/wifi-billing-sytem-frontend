@@ -307,7 +307,7 @@ const PlansPage = () => {
               <Wifi className="text-white w-8 h-8 sm:w-10 sm:h-10" />
             </div>
             <h1 className="text-white text-2xl sm:text-2xl font-bold">
-              Budget Wifi
+              Wifi Zone
             </h1>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3">
@@ -332,7 +332,7 @@ const PlansPage = () => {
               <span>24/7 Support</span>
             </div>
             <div className="flex items-center gap-2">
-              <span>Support: 0714724209/0714169153</span>
+              <span>Support: 0742664700/0714724209</span>
             </div>
           </div>
         </div>

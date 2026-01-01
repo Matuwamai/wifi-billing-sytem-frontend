@@ -1,7 +1,7 @@
 // redux/slices/analyticsSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import BASE_URL from "../../baseURL.js";
+import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
 

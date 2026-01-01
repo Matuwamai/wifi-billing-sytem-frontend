@@ -25,7 +25,19 @@ export const createGuestUser = createAsyncThunk(
     }
   }
 );
-
+export const login = createAsyncThunk(
+  "auth/login",
+  async (loginData, { rejectWithValue }) => {
+    try {
+      const res = await axios.post("/auth/login", loginData);
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to login"
+      );
+    }
+  }
+);
 // Login with M-Pesa code
 export const loginWithMpesaCode = createAsyncThunk(
   "auth/loginWithMpesaCode",
@@ -204,6 +216,29 @@ const authSlice = createSlice({
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to logout";
+      })
+      // login
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.loginSuccess = false;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = true;
+        state.user = action.payload.user;
+        state.subscription = action.payload.subscription;
+        state.session = action.payload.session;
+
+        // Store user in localStorage
+        if (action.payload.user) {
+          localStorage.setItem("user", JSON.stringify(action.payload.user));
+        }
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = false;
+        state.error = action.payload || "Failed to login";
       });
   },
 });
