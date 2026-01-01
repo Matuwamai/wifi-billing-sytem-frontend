@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, LogIn, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContex";
@@ -9,10 +9,14 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login, error, clearError, loginSuccess, user, loading } = useAuth();
 
-  const { login, error, clearError, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Use refs to track navigation state
+  const hasNavigatedRef = useRef(false);
+  const loginSuccessRef = useRef(loginSuccess);
 
   // Check for stored credentials
   useEffect(() => {
@@ -24,9 +28,59 @@ const LoginPage = () => {
       setRememberMe(true);
     }
 
-    // Clear any previous errors
     clearError();
+
+    // Reset navigation flag on component mount
+    hasNavigatedRef.current = false;
   }, [clearError]);
+
+  // Handle successful login - FIXED VERSION
+  useEffect(() => {
+    // Update ref to track loginSuccess changes
+    loginSuccessRef.current = loginSuccess;
+
+    // Only navigate if ALL conditions are met and we haven't navigated yet
+    if (
+      loginSuccess &&
+      user &&
+      user.UserRole === "ADMIN" &&
+      !hasNavigatedRef.current
+    ) {
+      console.log("✅ Login successful, navigating...");
+      hasNavigatedRef.current = true;
+
+      const from =
+        location.state?.from?.pathname || location.state?.from || "/admin";
+
+      // Use setTimeout to break the synchronous update cycle
+      const timer = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+
+    // If user is already authenticated and is admin, redirect immediately
+    if (user && user.UserRole === "ADMIN" && !hasNavigatedRef.current) {
+      console.log("🔄 Already logged in, redirecting...");
+      hasNavigatedRef.current = true;
+
+      const from =
+        location.state?.from?.pathname || location.state?.from || "/admin";
+      navigate(from, { replace: true });
+    }
+  }, [loginSuccess, user, navigate, location]);
+
+  // Clear loginSuccess after navigation
+  useEffect(() => {
+    return () => {
+      // Reset loginSuccess when component unmounts
+      if (hasNavigatedRef.current) {
+        console.log("🧹 Cleaning up login state");
+        // You might want to dispatch an action to reset loginSuccess here
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,37 +101,62 @@ const LoginPage = () => {
       localStorage.removeItem("remember_admin");
     }
 
-    const credentials = { phone, password };
+    const credentials = { phone: `${phone}`, password };
 
     try {
       const result = await login(credentials);
+      console.log("Login result:", result);
 
       if (result.success) {
-        // Navigate to the intended destination or default admin dashboard
-        const from = location.state?.from?.pathname || "/admin";
-        navigate(from, { replace: true });
+        console.log("✅ Login successful");
+        // Navigation will happen in useEffect
       } else {
+        console.log("❌ Login failed:", result.error);
         setIsSubmitting(false);
       }
     } catch (err) {
+      console.error("Login error:", err);
       setIsSubmitting(false);
     }
   };
 
   const handleDemoLogin = async () => {
-    setPhone("+254700000000");
-    setPassword("admin123");
+    setIsSubmitting(true);
+    clearError();
+
+    setPhone("700000000");
+    setPassword("DemoAdmin@123");
     setRememberMe(true);
 
-    // Auto-submit after a short delay
-    setTimeout(() => {
-      document
-        .getElementById("loginForm")
-        .dispatchEvent(
-          new Event("submit", { bubbles: true, cancelable: true })
-        );
-    }, 100);
+    const credentials = { phone: "700000000", password: "DemoAdmin@123" };
+
+    try {
+      const result = await login(credentials);
+      console.log("Demo login result:", result);
+
+      if (result.success) {
+        console.log("✅ Demo login successful");
+      } else {
+        console.log("❌ Demo login failed:", result.error);
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      console.error("Demo login error:", err);
+      setIsSubmitting(false);
+    }
   };
+
+  // If already logged in as admin, show loading state
+  if (user && user.UserRole === "ADMIN") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f172a] to-[#1e293b]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-300">Redirecting to admin panel...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f172a] to-[#1e293b] p-4">

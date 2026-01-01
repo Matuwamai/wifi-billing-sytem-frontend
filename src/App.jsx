@@ -6,7 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { Provider } from "react-redux";
-import { AuthProvider } from "./context/AuthContext"; // Fixed spelling
+import { AuthProvider } from "./context/AuthContex";
 import store from "./store/store";
 
 // Pages
@@ -15,13 +15,13 @@ import AdminPlansPage from "./pages/Admin/plans";
 import UserSubscriptionsPage from "./pages/Admin/UserSubscriptionsPage";
 import AdminSubscriptionsPage from "./pages/Admin/AdminSubscriptionsPage";
 import AdminPaymentPage from "./pages/Admin/AdminPaymentPage";
-import Layout from "./components/Layout"; // Fixed import path
+import Layout from "./componets/Layot";
 import VoucherPage from "./pages/Admin/Voucher";
 import UsersPage from "./pages/Admin/userPage";
 import AnalyticsPage from "./pages/Admin/AnalyticPage";
 import Unauthorized from "./pages/Admin/UnauthorizedPage";
 import LoginPage from "./pages/Admin/LoginPage";
-import ProtectedRoute from "./components/ProtectedRoute"; // Add this component
+import ProtectedRoute from "./componets/ProtectedRoutes";
 
 function App() {
   return (
