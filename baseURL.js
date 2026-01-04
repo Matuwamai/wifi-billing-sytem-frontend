@@ -1,2 +1,2 @@
-const BASE_URL = "http://localhost:3000/api";
+const BASE_URL = "https://server.madollawifi.click/api";
 export default BASE_URL;

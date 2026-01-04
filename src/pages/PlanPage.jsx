@@ -25,20 +25,19 @@ import {
   Shield,
   Smartphone,
   Ticket,
-  Key,
   UserCircle,
   Receipt,
   AlertCircle,
   X,
 } from "lucide-react";
 
-// Notification Component for real-time updates
+// Notification Component
 const Notification = ({ type, message, onClose }) => {
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => {
         onClose();
-      }, 3000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [message, onClose]);
@@ -96,11 +95,12 @@ const Notification = ({ type, message, onClose }) => {
 const useRealTimeStatus = () => {
   const [status, setStatus] = useState({
     message: "",
-    type: "", // success, error, info, warning
+    type: "",
     visible: false,
   });
 
   const showStatus = useCallback((message, type = "info") => {
+    console.log(`[STATUS ${type.toUpperCase()}]:`, message);
     setStatus({ message, type, visible: true });
   }, []);
 
@@ -122,32 +122,28 @@ const PlansPage = () => {
     subscription: userSubscription,
     session: userSession,
   } = useSelector((state) => state.auth || {});
+  console.log(user);
   const {
     loading: payLoading,
     success: paymentSuccess,
     error: paymentError,
   } = useSelector((state) => state.payment);
 
-  // Real-time notifications
   const { status, showStatus, hideStatus } = useRealTimeStatus();
 
-  // Form states
   const [phone, setPhone] = useState("");
   const [macAddress, setMacAddress] = useState("");
   const [deviceName, setDeviceName] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  // Modal states
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showMpesaLoginModal, setShowMpesaLoginModal] = useState(false);
   const [showUsernameLoginModal, setShowUsernameLoginModal] = useState(false);
 
-  // Voucher states
   const [voucherCode, setVoucherCode] = useState("");
   const [voucherPhone, setVoucherPhone] = useState("");
   const [voucherLoading, setVoucherLoading] = useState(false);
 
-  // Login states
   const [mpesaCode, setMpesaCode] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -170,8 +166,8 @@ const PlansPage = () => {
     }
 
     setDeviceName(device);
+    console.log("[DEVICE INFO] Detected device:", device);
 
-    // Generate consistent MAC-like identifier
     const fingerprint =
       userAgent + navigator.language + screen.width + screen.height;
     let hash = 0;
@@ -185,25 +181,29 @@ const PlansPage = () => {
       .join(":")
       .toUpperCase();
     setMacAddress(generatedMac);
+    console.log("[DEVICE INFO] Generated MAC:", generatedMac);
   }, []);
 
-  // Fetch plans
   useEffect(() => {
+    console.log("[PLANS] Fetching plans...");
     dispatch(fetchPlans());
   }, [dispatch]);
 
-  // Initialize guest user
   useEffect(() => {
     const initializeGuest = async () => {
       if (!user) {
         const storedUser = localStorage.getItem("guestUser");
         if (storedUser) {
+          console.log("[AUTH] Restoring guest user from localStorage");
           dispatch(setUser(JSON.parse(storedUser)));
         } else {
+          console.log("[AUTH] Creating new guest user...");
           const res = await dispatch(createGuestUser());
+          console.log("[AUTH] Guest user response:", res);
           if (res?.payload?.user) {
             localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
             dispatch(setUser(res.payload.user));
+            console.log("[AUTH] Guest user created:", res.payload.user);
           }
         }
       }
@@ -211,9 +211,9 @@ const PlansPage = () => {
     initializeGuest();
   }, [dispatch, user]);
 
-  // Handle payment status updates
   useEffect(() => {
     if (paymentSuccess) {
+      console.log("[PAYMENT SUCCESS] Payment initiated successfully");
       showStatus(
         "Payment initiated! Check your phone for STK push.",
         "success"
@@ -221,20 +221,20 @@ const PlansPage = () => {
       setTimeout(() => {
         setShowPaymentModal(false);
         dispatch(resetPaymentState());
-      }, 10000);
+      }, 5000);
     }
   }, [paymentSuccess, dispatch, showStatus]);
 
-  // Handle payment errors
   useEffect(() => {
     if (paymentError) {
+      console.error("[PAYMENT ERROR]", paymentError);
       showStatus(paymentError, "error");
     }
   }, [paymentError, showStatus]);
 
-  // Handle auth errors
   useEffect(() => {
     if (authError) {
+      console.error("[AUTH ERROR]", authError);
       showStatus(authError, "error");
       setTimeout(() => {
         dispatch(clearAuthError());
@@ -242,9 +242,9 @@ const PlansPage = () => {
     }
   }, [authError, dispatch, showStatus]);
 
-  // Handle login success
   useEffect(() => {
     if (userSubscription) {
+      console.log("[LOGIN SUCCESS] User subscription:", userSubscription);
       showStatus(
         `Welcome back! ${userSubscription.remainingTime} remaining on ${userSubscription.plan} plan.`,
         "success"
@@ -258,41 +258,90 @@ const PlansPage = () => {
   }, [userSubscription, dispatch, showStatus]);
 
   const handleBuy = (plan) => {
+    console.log("[PLAN SELECTION] User selected plan:", plan);
     setSelectedPlan(plan);
     setShowPaymentModal(true);
   };
 
   const handlePay = async () => {
+    console.log("[PAYMENT] Starting payment process...");
+    console.log("[PAYMENT] Selected plan:", selectedPlan);
+    console.log("[PAYMENT] User:", user);
+    console.log("[PAYMENT] Phone:", phone);
+    console.log("[PAYMENT] MAC Address:", macAddress);
+    console.log("[PAYMENT] Device Name:", deviceName);
+
     if (!selectedPlan) {
+      console.error("[PAYMENT ERROR] No plan selected");
       showStatus("No plan selected.", "error");
       return;
     }
-    if (!user || !user.id) {
-      showStatus("Please wait... preparing your account.", "info");
-      return;
-    }
+
     if (!phone || phone.length < 10) {
+      console.error("[PAYMENT ERROR] Invalid phone number:", phone);
       showStatus("Enter a valid phone number (e.g. 07xxxxxxxx)", "error");
       return;
     }
     if (!macAddress) {
+      console.error("[PAYMENT ERROR] No MAC address available");
       showStatus("Device identification failed. Please refresh.", "error");
       return;
     }
 
-    dispatch(
-      startPayment({
-        phone,
-        userId: user.id,
-        planId: selectedPlan.id,
-        macAddress,
-        deviceName,
-      })
-    );
+    const paymentData = {
+      phone,
+      userId: user?.id || "",
+      planId: selectedPlan.id,
+      macAddress,
+      deviceName,
+    };
+
+    console.log("[PAYMENT] Sending payment request with data:", paymentData);
+
+    try {
+      const resultAction = await dispatch(startPayment(paymentData));
+
+      console.log("[PAYMENT] Full result action:", resultAction);
+      console.log("[PAYMENT] Result type:", resultAction.type);
+      console.log("[PAYMENT] Result payload:", resultAction.payload);
+
+      if (startPayment.fulfilled.match(resultAction)) {
+        const response = resultAction.payload;
+        console.log("[PAYMENT SUCCESS] Server response:", response);
+
+        if (response?.message) {
+          showStatus(response.message, "success");
+        } else {
+          showStatus(
+            "Payment initiated successfully! Check your phone.",
+            "success"
+          );
+        }
+
+        // Keep modal open for 5 seconds to show success message
+        setTimeout(() => {
+          setShowPaymentModal(false);
+          setPhone("");
+        }, 5000);
+      } else if (startPayment.rejected.match(resultAction)) {
+        const errorMessage =
+          resultAction.payload ||
+          resultAction.error?.message ||
+          "Payment failed";
+        console.error("[PAYMENT FAILED] Error:", errorMessage);
+        console.error("[PAYMENT FAILED] Full error:", resultAction.error);
+        showStatus(errorMessage, "error");
+      }
+    } catch (error) {
+      console.error("[PAYMENT EXCEPTION] Unexpected error:", error);
+      console.error("[PAYMENT EXCEPTION] Error stack:", error.stack);
+      showStatus(error.message || "Payment failed. Please try again.", "error");
+    }
   };
 
   const handleRedeemVoucher = async (e) => {
     e.preventDefault();
+    console.log("[VOUCHER] Redeeming voucher:", voucherCode);
 
     if (!voucherCode || voucherCode.length < 10) {
       showStatus("Please enter a valid voucher code", "error");
@@ -307,15 +356,18 @@ const PlansPage = () => {
     setVoucherLoading(true);
 
     try {
-      const result = await dispatch(
-        redeemVoucher({
-          voucherCode: voucherCode.toUpperCase().replace(/\s/g, ""),
-          phone: voucherPhone || undefined,
-          macAddress,
-          deviceName,
-        })
-      ).unwrap();
+      const voucherData = {
+        voucherCode: voucherCode.toUpperCase().replace(/\s/g, ""),
+        phone: voucherPhone || undefined,
+        macAddress,
+        deviceName,
+      };
 
+      console.log("[VOUCHER] Sending request with data:", voucherData);
+
+      const result = await dispatch(redeemVoucher(voucherData)).unwrap();
+
+      console.log("[VOUCHER SUCCESS] Server response:", result);
       showStatus(
         result.message ||
           "Voucher redeemed successfully! You're now connected.",
@@ -324,6 +376,7 @@ const PlansPage = () => {
       setVoucherCode("");
       setVoucherPhone("");
     } catch (error) {
+      console.error("[VOUCHER ERROR]", error);
       showStatus(
         error ||
           "Failed to redeem voucher. Please check the code and try again.",
@@ -336,6 +389,7 @@ const PlansPage = () => {
 
   const handleMpesaLogin = async (e) => {
     e.preventDefault();
+    console.log("[MPESA LOGIN] Logging in with code:", mpesaCode);
 
     if (!mpesaCode || mpesaCode.length < 8) {
       showStatus("Please enter a valid M-Pesa transaction code", "error");
@@ -348,15 +402,21 @@ const PlansPage = () => {
     }
 
     try {
-      await dispatch(
-        loginWithMpesaCode({
-          mpesaCode: mpesaCode.toUpperCase(),
-          macAddress,
-          ipAddress: window.location.hostname,
-          deviceName,
-        })
-      ).unwrap();
+      const loginData = {
+        mpesaCode: mpesaCode.toUpperCase(),
+        macAddress,
+        ipAddress: window.location.hostname,
+        deviceName,
+      };
+
+      console.log("[MPESA LOGIN] Sending request with data:", loginData);
+
+      const result = await dispatch(loginWithMpesaCode(loginData)).unwrap();
+
+      console.log("[MPESA LOGIN SUCCESS] Server response:", result);
+      showStatus("Login successful!", "success");
     } catch (error) {
+      console.error("[MPESA LOGIN ERROR]", error);
       showStatus(
         error ||
           "Failed to login. Please check your M-Pesa code and try again.",
@@ -367,6 +427,7 @@ const PlansPage = () => {
 
   const handleUsernameLogin = async (e) => {
     e.preventDefault();
+    console.log("[USERNAME LOGIN] Logging in with username:", username);
 
     if (!username || !password) {
       showStatus("Please enter both username and password", "error");
@@ -379,16 +440,22 @@ const PlansPage = () => {
     }
 
     try {
-      await dispatch(
-        loginWithUsername({
-          username,
-          password,
-          macAddress,
-          ipAddress: window.location.hostname,
-          deviceName,
-        })
-      ).unwrap();
+      const loginData = {
+        username,
+        password,
+        macAddress,
+        ipAddress: window.location.hostname,
+        deviceName,
+      };
+
+      console.log("[USERNAME LOGIN] Sending request (password hidden)");
+
+      const result = await dispatch(loginWithUsername(loginData)).unwrap();
+
+      console.log("[USERNAME LOGIN SUCCESS] Server response:", result);
+      showStatus("Login successful!", "success");
     } catch (error) {
+      console.error("[USERNAME LOGIN ERROR]", error);
       showStatus(
         error ||
           "Failed to login. Please check your credentials and try again.",
@@ -398,6 +465,7 @@ const PlansPage = () => {
   };
 
   const closePaymentModal = () => {
+    console.log("[MODAL] Closing payment modal");
     setShowPaymentModal(false);
     setPhone("");
     setSelectedPlan(null);
@@ -415,16 +483,19 @@ const PlansPage = () => {
     setPassword("");
   };
 
+  const formatDuration = (value, type) => {
+    const typeLabel = type.toLowerCase();
+    return `${value} ${typeLabel}${value !== 1 ? "s" : ""}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
-      {/* Background effects */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      {/* Real-time Notification */}
       {status.visible && (
         <Notification
           type={status.type}
@@ -434,7 +505,6 @@ const PlansPage = () => {
       )}
 
       <div className="relative z-10">
-        {/* Header */}
         <div className="text-center py-8 px-4 sm:py-12">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl shadow-lg shadow-blue-500/50">
@@ -471,7 +541,6 @@ const PlansPage = () => {
           </div>
         </div>
 
-        {/* Plans Grid */}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
           {plansLoading ? (
             <div className="flex justify-center items-center h-40">
@@ -489,7 +558,6 @@ const PlansPage = () => {
                 <div
                   key={plan.id}
                   className="group relative bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/20 hover:border-blue-400/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1"
-                  style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
@@ -514,8 +582,10 @@ const PlansPage = () => {
                       <div className="flex items-center justify-between text-xs sm:text-sm">
                         <span className="text-blue-300">Duration</span>
                         <span className="text-white font-semibold">
-                          {plan.durationValue} {plan.durationType.toLowerCase()}
-                          (s)
+                          {formatDuration(
+                            plan.durationValue,
+                            plan.durationType
+                          )}
                         </span>
                       </div>
                       <div className="h-px bg-white/10"></div>
@@ -667,7 +737,7 @@ const PlansPage = () => {
       {/* Payment Modal */}
       {showPaymentModal && selectedPlan && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-50 px-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative border border-white/10 animate-in fade-in zoom-in duration-200">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative border border-white/10">
             <button
               onClick={closePaymentModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10"
@@ -691,8 +761,10 @@ const PlansPage = () => {
               <div className="flex justify-between items-center text-sm mb-2">
                 <span className="text-blue-300">Plan Duration</span>
                 <span className="text-white font-semibold">
-                  {selectedPlan.durationValue}{" "}
-                  {selectedPlan.durationType.toLowerCase()}(s)
+                  {formatDuration(
+                    selectedPlan.durationValue,
+                    selectedPlan.durationType
+                  )}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-2">
@@ -729,18 +801,19 @@ const PlansPage = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={closePaymentModal}
-                className="flex-1 px-4 py-3 rounded-xl border border-white/20 text-white hover:bg-white/10 transition-all font-semibold"
+                disabled={payLoading}
+                className="flex-1 px-4 py-3 rounded-xl border border-white/20 text-white hover:bg-white/10 transition-all font-semibold disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handlePay}
-                disabled={payLoading || !user}
-                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 font-semibold"
+                disabled={payLoading}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-500 hover:to-cyan-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/30 font-semibold flex items-center justify-center gap-2"
               >
                 {payLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Processing...
                   </>
                 ) : (
