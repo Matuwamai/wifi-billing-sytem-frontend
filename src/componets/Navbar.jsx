@@ -135,11 +135,6 @@ const Navbar = ({ onMenuClick, showMenuButton = true }) => {
             onClick={() => navigate("/admin")}
           >
             <div className="relative">
-              <img
-                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIRNp-vzGebS9al1QV2RIzLgpfwtqGI8pqHw&s"
-                alt="Budget WiFi Logo"
-                className="h-10 w-10 rounded-lg border-2 border-slate-600 object-cover"
-              />
               {isAdmin && (
                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#0f172a]"></div>
               )}

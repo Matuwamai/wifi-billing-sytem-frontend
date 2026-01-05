@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useState,
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { login, logout, clearError, setUser } from "../services/auth/authSlice";
@@ -20,7 +21,7 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
-  const { user, loading, error, subscription, session } = useSelector(
+  const { user, token, loading, error, subscription, session } = useSelector(
     (state) => state.auth
   );
 
@@ -40,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   }, [dispatch, user]);
 
   /* Reactive auth state */
-  const isAuthenticated = !!user && !!localStorage.getItem("token");
+  const isAuthenticated = token === null ? false : true;
   const isAdmin = user?.UserRole === "ADMIN";
 
   /* Permissions */
@@ -63,24 +64,58 @@ export const AuthProvider = ({ children }) => {
   const handleLogin = useCallback(
     async (credentials) => {
       try {
+        console.log("AuthContext: Starting login...", {
+          ...credentials,
+          password: "***",
+        });
+
+        // Dispatch login action and wait for result
         const result = await dispatch(login(credentials)).unwrap();
 
-        if (result?.token) {
+        console.log("AuthContext: Login result:", {
+          success: !!result?.token,
+          hasUser: !!result?.user,
+          result,
+        });
+
+        if (result?.token && result?.user) {
+          console.log("AuthContext: Saving token and user to localStorage");
           localStorage.setItem("token", result.token);
           localStorage.setItem("user", JSON.stringify(result.user));
+
+          // IMPORTANT: Also update Redux state directly
+          dispatch(setUser(result.user));
+
+          console.log("AuthContext: Login successful");
+          if (result.success) {
+            // Add a small delay to ensure state updates
+            setTimeout(() => {
+              console.log("Redirecting after login...");
+            }, 1000);
+          }
+
           return { success: true };
+          // In handleSubmit, after successful login:
         } else {
-          return { success: false };
+          console.log("AuthContext: Login failed - missing token or user");
+          return {
+            success: false,
+            error: result?.message || "Invalid response from server",
+          };
         }
       } catch (err) {
-        console.error("Login failed:", err);
-        return { success: false, error: err.message || "Login failed" };
+        console.error("AuthContext: Login failed with error:", err);
+        return {
+          success: false,
+          error: err.message || "Login failed",
+        };
       }
     },
     [dispatch]
   );
 
   const handleLogout = useCallback(() => {
+    console.log("AuthContext: Logging out...");
     dispatch(logout());
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -89,6 +124,18 @@ export const AuthProvider = ({ children }) => {
   const handleClearError = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  /* Debug logging */
+  useEffect(() => {
+    console.log("AuthContext State Update:", {
+      user,
+      loading,
+      error,
+      isAuthenticated,
+      isAdmin,
+      hasToken: !!localStorage.getItem("token"),
+    });
+  }, [user, loading, error, isAuthenticated, isAdmin]);
 
   /* Memoized context value */
   const value = useMemo(

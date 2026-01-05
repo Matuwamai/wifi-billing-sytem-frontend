@@ -174,11 +174,6 @@ const Sidebar = ({ onClose }) => {
       <div className="p-6 border-b border-slate-700/50">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
-            <img
-              src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQIRNp-vzGebS9al1QV2RIzLgpfwtqGI8pqHw&s"
-              alt="Budget WiFi Logo"
-              className="h-16 w-16 rounded-xl border-2 border-slate-600 object-cover"
-            />
             <div className="absolute -bottom-2 -right-2 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full border-2 border-[#0f172a] flex items-center justify-center">
               <Shield size={10} className="text-white" />
             </div>

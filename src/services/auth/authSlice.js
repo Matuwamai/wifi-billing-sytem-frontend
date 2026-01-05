@@ -4,23 +4,30 @@ import axios from "axios";
 import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
-const getAuthHeaders = () => ({
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
-});
+
+// Helper function for auth headers - accepts optional token
+const getAuthHeaders = (token = null) => {
+  const authToken = token || localStorage.getItem("token");
+  return authToken
+    ? {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    : {};
+};
+
 // Create guest user
 export const createGuestUser = createAsyncThunk(
   "auth/createGuestUser",
   async ({ deviceName, phone = null }, { rejectWithValue }) => {
     try {
-      // Send deviceName and phone to backend
       const res = await axios.post(
         "/user/guest",
         {
           deviceName,
           phone,
-          macAddress: deviceName, // Using deviceName as a fallback for mac
+          macAddress: deviceName,
         },
         getAuthHeaders()
       );
@@ -34,11 +41,12 @@ export const createGuestUser = createAsyncThunk(
     }
   }
 );
+
 export const login = createAsyncThunk(
   "auth/login",
   async (loginData, { rejectWithValue }) => {
     try {
-      const res = await axios.post("/user/login", loginData, getAuthHeaders());
+      const res = await axios.post("/user/login", loginData);
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -47,24 +55,15 @@ export const login = createAsyncThunk(
     }
   }
 );
+
 // Login with M-Pesa code
 export const loginWithMpesaCode = createAsyncThunk(
   "auth/loginWithMpesaCode",
   async (loginData, { rejectWithValue }) => {
     try {
-      console.log("📤 Sending M-Pesa login request:", loginData);
-      const res = await axios.post(
-        "/auth/login-mpesa",
-        loginData,
-        getAuthHeaders()
-      );
-      console.log("✅ M-Pesa login response:", res.data);
+      const res = await axios.post("/auth/login-mpesa", loginData);
       return res.data;
     } catch (error) {
-      console.error(
-        "❌ M-Pesa login error:",
-        error.response?.data || error.message
-      );
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
@@ -79,18 +78,9 @@ export const loginWithUsername = createAsyncThunk(
   "auth/loginWithUsername",
   async (loginData, { rejectWithValue }) => {
     try {
-      console.log("📤 Sending username login request:", {
-        ...loginData,
-        password: "***",
-      });
-      const res = await axios.post("/auth/login", loginData, getAuthHeaders());
-      console.log("✅ Username login response:", res.data);
+      const res = await axios.post("/auth/login", loginData);
       return res.data;
     } catch (error) {
-      console.error(
-        "❌ Username login error:",
-        error.response?.data || error.message
-      );
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
@@ -105,7 +95,6 @@ export const logout = createAsyncThunk(
   "auth/logout",
   async (_, { rejectWithValue }) => {
     try {
-      // Clear local storage
       localStorage.removeItem("guestUser");
       localStorage.removeItem("user");
       localStorage.removeItem("token");
@@ -151,6 +140,13 @@ const authSlice = createSlice({
     setSession: (state, action) => {
       state.session = action.payload;
     },
+    // Add a direct login action for testing
+    directLogin: (state, action) => {
+      state.user = action.payload.user;
+      state.loading = false;
+      state.error = null;
+      state.loginSuccess = true;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -180,11 +176,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.subscription = action.payload.subscription;
         state.session = action.payload.session;
-
-        // Store user in localStorage
-        if (action.payload.user) {
-          localStorage.setItem("user", JSON.stringify(action.payload.user));
-        }
       })
       .addCase(loginWithMpesaCode.rejected, (state, action) => {
         state.loading = false;
@@ -204,11 +195,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.subscription = action.payload.subscription;
         state.session = action.payload.session;
-
-        // Store user in localStorage
-        if (action.payload.user) {
-          localStorage.setItem("user", JSON.stringify(action.payload.user));
-        }
       })
       .addCase(loginWithUsername.rejected, (state, action) => {
         state.loading = false;
@@ -232,7 +218,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Failed to logout";
       })
-      // login
+
+      // Main login
       .addCase(login.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -244,11 +231,6 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.subscription = action.payload.subscription;
         state.session = action.payload.session;
-
-        // Store user in localStorage
-        if (action.payload.user) {
-          localStorage.setItem("user", JSON.stringify(action.payload.user));
-        }
       })
       .addCase(login.rejected, (state, action) => {
         state.loading = false;
@@ -264,6 +246,7 @@ export const {
   clearLoginSuccess,
   setSubscription,
   setSession,
+  directLogin,
 } = authSlice.actions;
 
 export default authSlice.reducer;
