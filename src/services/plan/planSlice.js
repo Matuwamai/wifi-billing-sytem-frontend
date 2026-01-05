@@ -3,27 +3,32 @@ import axios from "axios";
 import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
+const getAuthHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
 
 export const fetchPlans = createAsyncThunk("plan/fetchPlans", async () => {
-  const res = await axios.get("/plans");
+  const res = await axios.get("/plans", getAuthHeaders());
   return res.data.data;
 });
 export const createPlan = createAsyncThunk(
   "plan/createPlan",
   async (planData) => {
-    const res = await axios.post("/plans", planData);
+    const res = await axios.post("/plans", planData, getAuthHeaders());
     return res.data.data;
   }
 );
 export const updatePlan = createAsyncThunk(
   "plan/updatePlan",
   async ({ id, planData }) => {
-    const res = await axios.put(`/plans/${id}`, planData);
+    const res = await axios.put(`/plans/${id}`, planData, getAuthHeaders());
     return res.data.data;
   }
 );
 export const deletePlan = createAsyncThunk("plan/deletePlan", async (id) => {
-  const res = await axios.delete(`/plans/${id}`);
+  const res = await axios.delete(`/plans/${id}`, getAuthHeaders());
   return res.data.message;
 });
 

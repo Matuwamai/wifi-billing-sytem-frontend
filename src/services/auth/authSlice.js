@@ -15,11 +15,15 @@ export const createGuestUser = createAsyncThunk(
   async ({ deviceName, phone = null }, { rejectWithValue }) => {
     try {
       // Send deviceName and phone to backend
-      const res = await axios.post("/user/guest", {
-        deviceName,
-        phone,
-        macAddress: deviceName, // Using deviceName as a fallback for mac
-      });
+      const res = await axios.post(
+        "/user/guest",
+        {
+          deviceName,
+          phone,
+          macAddress: deviceName, // Using deviceName as a fallback for mac
+        },
+        getAuthHeaders()
+      );
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -34,7 +38,7 @@ export const login = createAsyncThunk(
   "auth/login",
   async (loginData, { rejectWithValue }) => {
     try {
-      const res = await axios.post("/user/login", loginData);
+      const res = await axios.post("/user/login", loginData, getAuthHeaders());
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -49,7 +53,11 @@ export const loginWithMpesaCode = createAsyncThunk(
   async (loginData, { rejectWithValue }) => {
     try {
       console.log("📤 Sending M-Pesa login request:", loginData);
-      const res = await axios.post("/auth/login-mpesa", loginData);
+      const res = await axios.post(
+        "/auth/login-mpesa",
+        loginData,
+        getAuthHeaders()
+      );
       console.log("✅ M-Pesa login response:", res.data);
       return res.data;
     } catch (error) {
@@ -75,7 +83,7 @@ export const loginWithUsername = createAsyncThunk(
         ...loginData,
         password: "***",
       });
-      const res = await axios.post("/auth/login", loginData);
+      const res = await axios.post("/auth/login", loginData, getAuthHeaders());
       console.log("✅ Username login response:", res.data);
       return res.data;
     } catch (error) {
