@@ -317,10 +317,10 @@ const AdminSubscriptionsPage = () => {
                         </div>
                       </td>
                       <td className="p-4 text-blue-200">
-                        {formatDate(subscription.startDate)}
+                        {formatDate(subscription.startTime)}
                       </td>
                       <td className="p-4 text-blue-200">
-                        {formatDate(subscription.endDate)}
+                        {formatDate(subscription.endTime)}
                       </td>
                       <td className="p-4">
                         {getStatusBadge(subscription.status)}
