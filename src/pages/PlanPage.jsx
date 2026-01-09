@@ -196,16 +196,17 @@ const PlansPage = () => {
         if (storedUser) {
           console.log("[AUTH] Restoring guest user from localStorage");
           dispatch(setUser(JSON.parse(storedUser)));
-        } else {
-          console.log("[AUTH] Creating new guest user...");
-          const res = await dispatch(createGuestUser());
-          console.log("[AUTH] Guest user response:", res);
-          if (res?.payload?.user) {
-            localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
-            dispatch(setUser(res.payload.user));
-            console.log("[AUTH] Guest user created:", res.payload.user);
-          }
         }
+        // else {
+        //   console.log("[AUTH] Creating new guest user...");
+        //   const res = await dispatch(createGuestUser());
+        //   console.log("[AUTH] Guest user response:", res);
+        //   if (res?.payload?.user) {
+        //     localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
+        //     dispatch(setUser(res.payload.user));
+        //     console.log("[AUTH] Guest user created:", res.payload.user);
+        //   }
+        // }
       }
     };
     initializeGuest();
@@ -540,7 +541,7 @@ const PlansPage = () => {
             </div>
           </div>
         </div>
-
+        {/* ``{" "}
         <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
           {plansLoading ? (
             <div className="flex justify-center items-center h-40">
@@ -612,7 +613,7 @@ const PlansPage = () => {
             </div>
           )}
         </div>
-
+        `` */}
         {/* Voucher Section - Always Visible */}
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-8">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
@@ -681,7 +682,6 @@ const PlansPage = () => {
             </form>
           </div>
         </div>
-
         {/* Login Options */}
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
