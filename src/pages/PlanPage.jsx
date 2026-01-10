@@ -683,9 +683,10 @@ const PlansPage = () => {
           </div>
         </div>
         {/* Login Options */}
-        <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
+
+        {/* <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* M-Pesa Login Card */}
+            M-Pesa Login Card
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-400 rounded-2xl mb-4 shadow-lg shadow-cyan-500/50">
@@ -707,8 +708,7 @@ const PlansPage = () => {
                 Login with M-Pesa
               </button>
             </div>
-
-            {/* Username Login Card */}
+            Username Login Card
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-400 rounded-2xl mb-4 shadow-lg shadow-green-500/50">
@@ -731,7 +731,7 @@ const PlansPage = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Payment Modal */}
@@ -884,7 +884,7 @@ const PlansPage = () => {
       )}
 
       {/* Username Login Modal */}
-      {showUsernameLoginModal && (
+      {/* {showUsernameLoginModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/70 backdrop-blur-md z-50 px-4">
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative border border-white/10 animate-in fade-in zoom-in duration-200">
             <button
@@ -955,7 +955,7 @@ const PlansPage = () => {
             </form>
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 };
