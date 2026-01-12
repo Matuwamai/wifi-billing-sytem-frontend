@@ -1,9 +1,149 @@
+// import React, { useEffect, useState, useCallback } from "react";
 import React, { useEffect, useState, useCallback } from "react";
-// ... other imports remain the same
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPlans } from "../services/plan/planSlice.js";
+import {
+  startPayment,
+  resetPaymentState,
+} from "../services/payment/paymentSlice.js";
+import {
+  createGuestUser,
+  setUser,
+  loginWithMpesaCode,
+  loginWithUsername,
+  clearError as clearAuthError,
+  clearLoginSuccess,
+} from "../services/auth/authSlice.js";
+import { redeemVoucher } from "../services/voucher/Vouchers.js";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Wifi,
+  CreditCard,
+  Clock,
+  Zap,
+  Shield,
+  Smartphone,
+  Ticket,
+  UserCircle,
+  Receipt,
+  AlertCircle,
+  X,
+} from "lucide-react";
+// Notification Component
+const Notification = ({ type, message, onClose }) => {
+  useEffect(() => {
+    if (message) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, onClose]);
+
+  if (!message) return null;
+
+  const config = {
+    success: {
+      bg: "bg-green-500/10",
+      border: "border-green-500/20",
+      text: "text-green-400",
+      icon: <CheckCircle2 className="w-5 h-5" />,
+    },
+    error: {
+      bg: "bg-red-500/10",
+      border: "border-red-500/20",
+      text: "text-red-400",
+      icon: <XCircle className="w-5 h-5" />,
+    },
+    info: {
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/20",
+      text: "text-blue-400",
+      icon: <AlertCircle className="w-5 h-5" />,
+    },
+    warning: {
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
+      text: "text-amber-400",
+      icon: <AlertCircle className="w-5 h-5" />,
+    },
+  }[type];
+
+  return (
+    <div
+      className={`fixed top-4 right-4 ${config.bg} ${config.border} border rounded-xl p-4 max-w-sm z-50 animate-in slide-in-from-right fade-in duration-200 shadow-lg`}
+    >
+      <div className="flex items-start gap-3">
+        {config.icon}
+        <div className="flex-1">
+          <p className={`${config.text} text-sm font-medium`}>{message}</p>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Real-time status tracker
+const useRealTimeStatus = () => {
+  const [status, setStatus] = useState({
+    message: "",
+    type: "",
+    visible: false,
+  });
+
+  const showStatus = useCallback((message, type = "info") => {
+    console.log(`[STATUS ${type.toUpperCase()}]:`, message);
+    setStatus({ message, type, visible: true });
+  }, []);
+
+  const hideStatus = useCallback(() => {
+    setStatus((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  return { status, showStatus, hideStatus };
+};
 
 const PlansPage = () => {
   const dispatch = useDispatch();
   // ... other state declarations remain the same
+
+  const { plans, loading: plansLoading } = useSelector((state) => state.plan);
+  const {
+    user,
+    loading: userLoading,
+    loginLoading = false,
+    error: authError,
+    subscription: userSubscription,
+    session: userSession,
+  } = useSelector((state) => state.auth || {});
+  console.log(user);
+  const {
+    loading: payLoading,
+    success: paymentSuccess,
+    error: paymentError,
+  } = useSelector((state) => state.payment);
+
+  const { status, showStatus, hideStatus } = useRealTimeStatus();
+
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showMpesaLoginModal, setShowMpesaLoginModal] = useState(false);
+  const [showUsernameLoginModal, setShowUsernameLoginModal] = useState(false);
+
+  const [voucherCode, setVoucherCode] = useState("");
+  const [voucherPhone, setVoucherPhone] = useState("");
+  const [voucherLoading, setVoucherLoading] = useState(false);
+
+  const [mpesaCode, setMpesaCode] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const [phone, setPhone] = useState("");
   const [macAddress, setMacAddress] = useState("");
@@ -263,7 +403,153 @@ const PlansPage = () => {
       // ... error handling
     }
   };
-  git;
+  const handleRedeemVoucher = async (e) => {
+    e.preventDefault();
+    console.log("[VOUCHER] Redeeming voucher:", voucherCode);
+
+    if (!voucherCode || voucherCode.length < 10) {
+      showStatus("Please enter a valid voucher code", "error");
+      return;
+    }
+
+    if (!macAddress) {
+      showStatus("Device identification failed. Please refresh.", "error");
+      return;
+    }
+
+    setVoucherLoading(true);
+
+    try {
+      const voucherData = {
+        voucherCode: voucherCode.toUpperCase().replace(/\s/g, ""),
+        phone: voucherPhone || undefined,
+        macAddress,
+        deviceName,
+      };
+
+      console.log("[VOUCHER] Sending request with data:", voucherData);
+
+      const result = await dispatch(redeemVoucher(voucherData)).unwrap();
+
+      console.log("[VOUCHER SUCCESS] Server response:", result);
+      showStatus(
+        result.message ||
+          "Voucher redeemed successfully! You're now connected.",
+        "success"
+      );
+      setVoucherCode("");
+      setVoucherPhone("");
+    } catch (error) {
+      console.error("[VOUCHER ERROR]", error);
+      showStatus(
+        error ||
+          "Failed to redeem voucher. Please check the code and try again.",
+        "error"
+      );
+    } finally {
+      setVoucherLoading(false);
+    }
+  };
+  const handleMpesaLogin = async (e) => {
+    e.preventDefault();
+    console.log("[MPESA LOGIN] Logging in with code:", mpesaCode);
+
+    if (!mpesaCode || mpesaCode.length < 8) {
+      showStatus("Please enter a valid M-Pesa transaction code", "error");
+      return;
+    }
+
+    if (!macAddress) {
+      showStatus("Device identification failed. Please refresh.", "error");
+      return;
+    }
+
+    try {
+      const loginData = {
+        mpesaCode: mpesaCode.toUpperCase(),
+        macAddress,
+        ipAddress: window.location.hostname,
+        deviceName,
+      };
+
+      console.log("[MPESA LOGIN] Sending request with data:", loginData);
+
+      const result = await dispatch(loginWithMpesaCode(loginData)).unwrap();
+
+      console.log("[MPESA LOGIN SUCCESS] Server response:", result);
+      showStatus("Login successful!", "success");
+    } catch (error) {
+      console.error("[MPESA LOGIN ERROR]", error);
+      showStatus(
+        error ||
+          "Failed to login. Please check your M-Pesa code and try again.",
+        "error"
+      );
+    }
+  };
+
+  const handleUsernameLogin = async (e) => {
+    e.preventDefault();
+    console.log("[USERNAME LOGIN] Logging in with username:", username);
+
+    if (!username || !password) {
+      showStatus("Please enter both username and password", "error");
+      return;
+    }
+
+    if (!macAddress) {
+      showStatus("Device identification failed. Please refresh.", "error");
+      return;
+    }
+
+    try {
+      const loginData = {
+        username,
+        password,
+        macAddress,
+        ipAddress: window.location.hostname,
+        deviceName,
+      };
+
+      console.log("[USERNAME LOGIN] Sending request (password hidden)");
+
+      const result = await dispatch(loginWithUsername(loginData)).unwrap();
+
+      console.log("[USERNAME LOGIN SUCCESS] Server response:", result);
+      showStatus("Login successful!", "success");
+    } catch (error) {
+      console.error("[USERNAME LOGIN ERROR]", error);
+      showStatus(
+        error ||
+          "Failed to login. Please check your credentials and try again.",
+        "error"
+      );
+    }
+  };
+
+  const closePaymentModal = () => {
+    console.log("[MODAL] Closing payment modal");
+    setShowPaymentModal(false);
+    setPhone("");
+    setSelectedPlan(null);
+    dispatch(resetPaymentState());
+  };
+
+  const closeMpesaLoginModal = () => {
+    setShowMpesaLoginModal(false);
+    setMpesaCode("");
+  };
+
+  const closeUsernameLoginModal = () => {
+    setShowUsernameLoginModal(false);
+    setUsername("");
+    setPassword("");
+  };
+
+  const formatDuration = (value, type) => {
+    const typeLabel = type.toLowerCase();
+    return `${value} ${typeLabel}${value !== 1 ? "s" : ""}`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
