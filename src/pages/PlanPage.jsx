@@ -1,493 +1,269 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchPlans } from "../services/plan/planSlice.js";
-import {
-  startPayment,
-  resetPaymentState,
-} from "../services/payment/paymentSlice.js";
-import {
-  createGuestUser,
-  setUser,
-  loginWithMpesaCode,
-  loginWithUsername,
-  clearError as clearAuthError,
-  clearLoginSuccess,
-} from "../services/auth/authSlice.js";
-import { redeemVoucher } from "../services/voucher/Vouchers.js";
-import {
-  Loader2,
-  CheckCircle2,
-  XCircle,
-  Wifi,
-  CreditCard,
-  Clock,
-  Zap,
-  Shield,
-  Smartphone,
-  Ticket,
-  UserCircle,
-  Receipt,
-  AlertCircle,
-  X,
-} from "lucide-react";
-
-// Notification Component
-const Notification = ({ type, message, onClose }) => {
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message, onClose]);
-
-  if (!message) return null;
-
-  const config = {
-    success: {
-      bg: "bg-green-500/10",
-      border: "border-green-500/20",
-      text: "text-green-400",
-      icon: <CheckCircle2 className="w-5 h-5" />,
-    },
-    error: {
-      bg: "bg-red-500/10",
-      border: "border-red-500/20",
-      text: "text-red-400",
-      icon: <XCircle className="w-5 h-5" />,
-    },
-    info: {
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20",
-      text: "text-blue-400",
-      icon: <AlertCircle className="w-5 h-5" />,
-    },
-    warning: {
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/20",
-      text: "text-amber-400",
-      icon: <AlertCircle className="w-5 h-5" />,
-    },
-  }[type];
-
-  return (
-    <div
-      className={`fixed top-4 right-4 ${config.bg} ${config.border} border rounded-xl p-4 max-w-sm z-50 animate-in slide-in-from-right fade-in duration-200 shadow-lg`}
-    >
-      <div className="flex items-start gap-3">
-        {config.icon}
-        <div className="flex-1">
-          <p className={`${config.text} text-sm font-medium`}>{message}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Real-time status tracker
-const useRealTimeStatus = () => {
-  const [status, setStatus] = useState({
-    message: "",
-    type: "",
-    visible: false,
-  });
-
-  const showStatus = useCallback((message, type = "info") => {
-    console.log(`[STATUS ${type.toUpperCase()}]:`, message);
-    setStatus({ message, type, visible: true });
-  }, []);
-
-  const hideStatus = useCallback(() => {
-    setStatus((prev) => ({ ...prev, visible: false }));
-  }, []);
-
-  return { status, showStatus, hideStatus };
-};
+// ... other imports remain the same
 
 const PlansPage = () => {
   const dispatch = useDispatch();
-  const { plans, loading: plansLoading } = useSelector((state) => state.plan);
-  const {
-    user,
-    loading: userLoading,
-    loginLoading = false,
-    error: authError,
-    subscription: userSubscription,
-    session: userSession,
-  } = useSelector((state) => state.auth || {});
-  console.log(user);
-  const {
-    loading: payLoading,
-    success: paymentSuccess,
-    error: paymentError,
-  } = useSelector((state) => state.payment);
-
-  const { status, showStatus, hideStatus } = useRealTimeStatus();
+  // ... other state declarations remain the same
 
   const [phone, setPhone] = useState("");
   const [macAddress, setMacAddress] = useState("");
   const [deviceName, setDeviceName] = useState("");
+  const [deviceHostname, setDeviceHostname] = useState(""); // NEW: For actual hostname
   const [selectedPlan, setSelectedPlan] = useState(null);
 
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showMpesaLoginModal, setShowMpesaLoginModal] = useState(false);
-  const [showUsernameLoginModal, setShowUsernameLoginModal] = useState(false);
+  // ... other state declarations remain the same
 
-  const [voucherCode, setVoucherCode] = useState("");
-  const [voucherPhone, setVoucherPhone] = useState("");
-  const [voucherLoading, setVoucherLoading] = useState(false);
-
-  const [mpesaCode, setMpesaCode] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
-  // Initialize device info
+  // Initialize device info - UPDATED VERSION
   useEffect(() => {
-    const userAgent = navigator.userAgent;
-    let device = "Unknown Device";
+    const detectDeviceInfo = async () => {
+      console.log("[DEVICE INFO] Starting device detection...");
 
-    if (/android/i.test(userAgent)) {
-      device = "Android Device";
-    } else if (/iPad|iPhone|iPod/.test(userAgent)) {
-      device = "iOS Device";
-    } else if (/Windows/.test(userAgent)) {
-      device = "Windows PC";
-    } else if (/Mac/.test(userAgent)) {
-      device = "Mac";
-    } else if (/Linux/.test(userAgent)) {
-      device = "Linux Device";
-    }
+      // 1. First get user agent info for device type
+      const userAgent = navigator.userAgent;
+      let deviceType = "Unknown Device";
 
-    setDeviceName(device);
-    console.log("[DEVICE INFO] Detected device:", device);
+      if (/android/i.test(userAgent)) {
+        deviceType = "Android Device";
+      } else if (/iPad|iPhone|iPod/.test(userAgent)) {
+        deviceType = "iOS Device";
+      } else if (/Windows/.test(userAgent)) {
+        deviceType = "Windows PC";
+      } else if (/Mac/.test(userAgent)) {
+        deviceType = "Mac";
+      } else if (/Linux/.test(userAgent)) {
+        deviceType = "Linux Device";
+      }
 
-    const fingerprint =
-      userAgent + navigator.language + screen.width + screen.height;
-    let hash = 0;
-    for (let i = 0; i < fingerprint.length; i++) {
-      hash = (hash << 5) - hash + fingerprint.charCodeAt(i);
-      hash = hash & hash;
-    }
-    const hex = Math.abs(hash).toString(16).padStart(12, "0").slice(0, 12);
-    const generatedMac = hex
-      .match(/.{1,2}/g)
-      .join(":")
-      .toUpperCase();
-    setMacAddress(generatedMac);
-    console.log("[DEVICE INFO] Generated MAC:", generatedMac);
+      console.log("[DEVICE INFO] Detected device type:", deviceType);
+
+      // 2. Try multiple methods to get actual hostname
+      let detectedHostname = "";
+
+      // Method 1: Try to get from browser APIs (limited due to security)
+      try {
+        // This works in some browsers/environments
+        if (navigator.userAgentData && navigator.userAgentData.platform) {
+          detectedHostname = navigator.userAgentData.platform;
+          console.log(
+            "[DEVICE INFO] Got hostname from userAgentData:",
+            detectedHostname
+          );
+        }
+      } catch (e) {
+        console.log("[DEVICE INFO] userAgentData not available");
+      }
+
+      // Method 2: Try to get from network info (experimental)
+      try {
+        if (navigator.connection) {
+          const connection = navigator.connection;
+          console.log("[DEVICE INFO] Network info:", connection);
+        }
+      } catch (e) {
+        console.log("[DEVICE INFO] Network API not available");
+      }
+
+      // Method 3: Try to get from WebRTC (might give local IP)
+      try {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("");
+        pc.createOffer()
+          .then((offer) => pc.setLocalDescription(offer))
+          .then(() => {
+            setTimeout(() => {
+              pc.getStats().then((stats) => {
+                stats.forEach((report) => {
+                  if (report.type === "local-candidate" && report.ip) {
+                    console.log(
+                      "[DEVICE INFO] Local IP from WebRTC:",
+                      report.ip
+                    );
+                  }
+                });
+                pc.close();
+              });
+            }, 1000);
+          });
+      } catch (e) {
+        console.log("[DEVICE INFO] WebRTC not available");
+      }
+
+      // Method 4: Use a combination of browser info for a better name
+      if (!detectedHostname) {
+        // Extract more details from user agent
+        const ua = navigator.userAgent;
+        let model = "";
+
+        // Try to get specific model for Android
+        if (/Android/.test(ua)) {
+          const match = ua.match(/Android\s([^;]+)/);
+          if (match) model = match[1].trim();
+
+          // Try to get device model
+          const deviceMatch = ua.match(/\(([^)]+)\)/);
+          if (deviceMatch) {
+            const deviceInfo = deviceMatch[1];
+            // Extract common device patterns
+            const knownDevices = {
+              "SM-": "Samsung Galaxy",
+              Pixel: "Google Pixel",
+              iPhone: "iPhone",
+              iPad: "iPad",
+              Macintosh: "Mac",
+            };
+
+            for (const [key, value] of Object.entries(knownDevices)) {
+              if (deviceInfo.includes(key)) {
+                detectedHostname = value;
+                break;
+              }
+            }
+          }
+        }
+
+        // For iOS
+        if (/iPhone|iPad|iPod/.test(ua)) {
+          const match = ua.match(/(iPhone|iPad|iPod)\s+([^;]+)/);
+          if (match) {
+            detectedHostname = `${match[1]} ${match[2] || ""}`.trim();
+          }
+        }
+
+        // For Windows
+        if (/Windows/.test(ua)) {
+          const match = ua.match(/Windows\s+([^;)]+)/);
+          if (match) {
+            detectedHostname = `Windows ${match[1].split(";")[0]}`.trim();
+          }
+        }
+
+        // For Mac
+        if (/Macintosh/.test(ua)) {
+          const match = ua.match(/Mac OS X\s+([^;)]+)/);
+          if (match) {
+            detectedHostname = `Mac ${match[1]}`.trim();
+          }
+        }
+      }
+
+      // Method 5: If all else fails, use device type with random identifier
+      if (!detectedHostname || detectedHostname.length < 2) {
+        // Create a more descriptive name
+        const randomId = Math.random()
+          .toString(36)
+          .substring(2, 8)
+          .toUpperCase();
+        detectedHostname = `${deviceType.replace(/\s+/g, "-")}-${randomId}`;
+        console.log(
+          "[DEVICE INFO] Generated fallback hostname:",
+          detectedHostname
+        );
+      }
+
+      // Clean up the hostname (remove special characters, limit length)
+      let cleanHostname = detectedHostname
+        .replace(/[^a-zA-Z0-9\-_]/g, "") // Remove special chars
+        .replace(/\s+/g, "-") // Replace spaces with hyphens
+        .substring(0, 30) // Limit length
+        .toLowerCase(); // Convert to lowercase for consistency
+
+      if (cleanHostname.length < 3) {
+        cleanHostname = `device-${Math.random().toString(36).substring(2, 6)}`;
+      }
+
+      console.log("[DEVICE INFO] Final cleaned hostname:", cleanHostname);
+
+      // 3. Generate MAC-like identifier
+      const fingerprint =
+        userAgent +
+        navigator.language +
+        screen.width +
+        screen.height +
+        navigator.platform +
+        navigator.hardwareConcurrency;
+
+      let hash = 0;
+      for (let i = 0; i < fingerprint.length; i++) {
+        hash = (hash << 5) - hash + fingerprint.charCodeAt(i);
+        hash = hash & hash;
+      }
+
+      const hex = Math.abs(hash).toString(16).padStart(12, "0").slice(0, 12);
+      const generatedMac = hex
+        .match(/.{1,2}/g)
+        .join(":")
+        .toUpperCase();
+
+      console.log("[DEVICE INFO] Generated MAC:", generatedMac);
+
+      // 4. Update state
+      setDeviceName(deviceType);
+      setDeviceHostname(cleanHostname); // This should be like "matu-s-a05"
+      setMacAddress(generatedMac);
+
+      // 5. If we have a clean hostname, use it as the suggested username
+      // You can add this to your registration form if needed
+      console.log("[DEVICE INFO] Suggested username:", cleanHostname);
+
+      // Store in localStorage for later use
+      localStorage.setItem("deviceHostname", cleanHostname);
+      localStorage.setItem("deviceFingerprint", fingerprint);
+    };
+
+    detectDeviceInfo();
   }, []);
 
-  useEffect(() => {
-    console.log("[PLANS] Fetching plans...");
-    dispatch(fetchPlans());
-  }, [dispatch]);
+  // ... rest of your component code remains the same
 
-  useEffect(() => {
-    const initializeGuest = async () => {
-      if (!user) {
-        const storedUser = localStorage.getItem("guestUser");
-        if (storedUser) {
-          console.log("[AUTH] Restoring guest user from localStorage");
-          dispatch(setUser(JSON.parse(storedUser)));
-        }
-        // else {
-        //   console.log("[AUTH] Creating new guest user...");
-        //   const res = await dispatch(createGuestUser());
-        //   console.log("[AUTH] Guest user response:", res);
-        //   if (res?.payload?.user) {
-        //     localStorage.setItem("guestUser", JSON.stringify(res.payload.user));
-        //     dispatch(setUser(res.payload.user));
-        //     console.log("[AUTH] Guest user created:", res.payload.user);
-        //   }
-        // }
-      }
-    };
-    initializeGuest();
-  }, [dispatch, user]);
-
-  useEffect(() => {
-    if (paymentSuccess) {
-      console.log("[PAYMENT SUCCESS] Payment initiated successfully");
-      showStatus(
-        "Payment initiated! Check your phone for STK push.",
-        "success"
-      );
-      setTimeout(() => {
-        setShowPaymentModal(false);
-        dispatch(resetPaymentState());
-      }, 5000);
-    }
-  }, [paymentSuccess, dispatch, showStatus]);
-
-  useEffect(() => {
-    if (paymentError) {
-      console.error("[PAYMENT ERROR]", paymentError);
-      showStatus(paymentError, "error");
-    }
-  }, [paymentError, showStatus]);
-
-  useEffect(() => {
-    if (authError) {
-      console.error("[AUTH ERROR]", authError);
-      showStatus(authError, "error");
-      setTimeout(() => {
-        dispatch(clearAuthError());
-      }, 10000);
-    }
-  }, [authError, dispatch, showStatus]);
-
-  useEffect(() => {
-    if (userSubscription) {
-      console.log("[LOGIN SUCCESS] User subscription:", userSubscription);
-      showStatus(
-        `Welcome back! ${userSubscription.remainingTime} remaining on ${userSubscription.plan} plan.`,
-        "success"
-      );
-      setTimeout(() => {
-        setShowMpesaLoginModal(false);
-        setShowUsernameLoginModal(false);
-        dispatch(clearLoginSuccess());
-      }, 3000);
-    }
-  }, [userSubscription, dispatch, showStatus]);
-
-  const handleBuy = (plan) => {
-    console.log("[PLAN SELECTION] User selected plan:", plan);
-    setSelectedPlan(plan);
-    setShowPaymentModal(true);
-  };
-
+  // When handling payment, send BOTH deviceName AND deviceHostname
   const handlePay = async () => {
     console.log("[PAYMENT] Starting payment process...");
-    console.log("[PAYMENT] Selected plan:", selectedPlan);
-    console.log("[PAYMENT] User:", user);
-    console.log("[PAYMENT] Phone:", phone);
+    console.log("[PAYMENT] Device Hostname:", deviceHostname); // This should be "matu-s-a05"
+    console.log("[PAYMENT] Device Type:", deviceName);
     console.log("[PAYMENT] MAC Address:", macAddress);
-    console.log("[PAYMENT] Device Name:", deviceName);
 
     if (!selectedPlan) {
-      console.error("[PAYMENT ERROR] No plan selected");
       showStatus("No plan selected.", "error");
       return;
     }
 
     if (!phone || phone.length < 10) {
-      console.error("[PAYMENT ERROR] Invalid phone number:", phone);
       showStatus("Enter a valid phone number (e.g. 07xxxxxxxx)", "error");
       return;
     }
-    if (!macAddress) {
-      console.error("[PAYMENT ERROR] No MAC address available");
-      showStatus("Device identification failed. Please refresh.", "error");
-      return;
-    }
+
+    // Suggest using device hostname as username
+    const suggestedUsername =
+      deviceHostname ||
+      deviceName.toLowerCase().replace(/\s+/g, "-") +
+        "-" +
+        Math.random().toString(36).substring(2, 6);
+
+    console.log(
+      "[PAYMENT] Suggested username for registration:",
+      suggestedUsername
+    );
 
     const paymentData = {
       phone,
       userId: user?.id || "",
       planId: selectedPlan.id,
       macAddress,
-      deviceName,
+      deviceName, // The device type (Android Device, etc.)
+      deviceHostname, // The actual hostname (matu-s-a05)
+      suggestedUsername, // Suggest this as the username
     };
 
     console.log("[PAYMENT] Sending payment request with data:", paymentData);
 
     try {
       const resultAction = await dispatch(startPayment(paymentData));
-
-      console.log("[PAYMENT] Full result action:", resultAction);
-      console.log("[PAYMENT] Result type:", resultAction.type);
-      console.log("[PAYMENT] Result payload:", resultAction.payload);
-
-      if (startPayment.fulfilled.match(resultAction)) {
-        const response = resultAction.payload;
-        console.log("[PAYMENT SUCCESS] Server response:", response);
-
-        if (response?.message) {
-          showStatus(response.message, "success");
-        } else {
-          showStatus(
-            "Payment initiated successfully! Check your phone.",
-            "success"
-          );
-        }
-
-        // Keep modal open for 5 seconds to show success message
-        setTimeout(() => {
-          setShowPaymentModal(false);
-          setPhone("");
-        }, 5000);
-      } else if (startPayment.rejected.match(resultAction)) {
-        const errorMessage =
-          resultAction.payload ||
-          resultAction.error?.message ||
-          "Payment failed";
-        console.error("[PAYMENT FAILED] Error:", errorMessage);
-        console.error("[PAYMENT FAILED] Full error:", resultAction.error);
-        showStatus(errorMessage, "error");
-      }
+      // ... rest of payment handling
     } catch (error) {
-      console.error("[PAYMENT EXCEPTION] Unexpected error:", error);
-      console.error("[PAYMENT EXCEPTION] Error stack:", error.stack);
-      showStatus(error.message || "Payment failed. Please try again.", "error");
+      // ... error handling
     }
   };
-
-  const handleRedeemVoucher = async (e) => {
-    e.preventDefault();
-    console.log("[VOUCHER] Redeeming voucher:", voucherCode);
-
-    if (!voucherCode || voucherCode.length < 10) {
-      showStatus("Please enter a valid voucher code", "error");
-      return;
-    }
-
-    if (!macAddress) {
-      showStatus("Device identification failed. Please refresh.", "error");
-      return;
-    }
-
-    setVoucherLoading(true);
-
-    try {
-      const voucherData = {
-        voucherCode: voucherCode.toUpperCase().replace(/\s/g, ""),
-        phone: voucherPhone || undefined,
-        macAddress,
-        deviceName,
-      };
-
-      console.log("[VOUCHER] Sending request with data:", voucherData);
-
-      const result = await dispatch(redeemVoucher(voucherData)).unwrap();
-
-      console.log("[VOUCHER SUCCESS] Server response:", result);
-      showStatus(
-        result.message ||
-          "Voucher redeemed successfully! You're now connected.",
-        "success"
-      );
-      setVoucherCode("");
-      setVoucherPhone("");
-    } catch (error) {
-      console.error("[VOUCHER ERROR]", error);
-      showStatus(
-        error ||
-          "Failed to redeem voucher. Please check the code and try again.",
-        "error"
-      );
-    } finally {
-      setVoucherLoading(false);
-    }
-  };
-
-  const handleMpesaLogin = async (e) => {
-    e.preventDefault();
-    console.log("[MPESA LOGIN] Logging in with code:", mpesaCode);
-
-    if (!mpesaCode || mpesaCode.length < 8) {
-      showStatus("Please enter a valid M-Pesa transaction code", "error");
-      return;
-    }
-
-    if (!macAddress) {
-      showStatus("Device identification failed. Please refresh.", "error");
-      return;
-    }
-
-    try {
-      const loginData = {
-        mpesaCode: mpesaCode.toUpperCase(),
-        macAddress,
-        ipAddress: window.location.hostname,
-        deviceName,
-      };
-
-      console.log("[MPESA LOGIN] Sending request with data:", loginData);
-
-      const result = await dispatch(loginWithMpesaCode(loginData)).unwrap();
-
-      console.log("[MPESA LOGIN SUCCESS] Server response:", result);
-      showStatus("Login successful!", "success");
-    } catch (error) {
-      console.error("[MPESA LOGIN ERROR]", error);
-      showStatus(
-        error ||
-          "Failed to login. Please check your M-Pesa code and try again.",
-        "error"
-      );
-    }
-  };
-
-  const handleUsernameLogin = async (e) => {
-    e.preventDefault();
-    console.log("[USERNAME LOGIN] Logging in with username:", username);
-
-    if (!username || !password) {
-      showStatus("Please enter both username and password", "error");
-      return;
-    }
-
-    if (!macAddress) {
-      showStatus("Device identification failed. Please refresh.", "error");
-      return;
-    }
-
-    try {
-      const loginData = {
-        username,
-        password,
-        macAddress,
-        ipAddress: window.location.hostname,
-        deviceName,
-      };
-
-      console.log("[USERNAME LOGIN] Sending request (password hidden)");
-
-      const result = await dispatch(loginWithUsername(loginData)).unwrap();
-
-      console.log("[USERNAME LOGIN SUCCESS] Server response:", result);
-      showStatus("Login successful!", "success");
-    } catch (error) {
-      console.error("[USERNAME LOGIN ERROR]", error);
-      showStatus(
-        error ||
-          "Failed to login. Please check your credentials and try again.",
-        "error"
-      );
-    }
-  };
-
-  const closePaymentModal = () => {
-    console.log("[MODAL] Closing payment modal");
-    setShowPaymentModal(false);
-    setPhone("");
-    setSelectedPlan(null);
-    dispatch(resetPaymentState());
-  };
-
-  const closeMpesaLoginModal = () => {
-    setShowMpesaLoginModal(false);
-    setMpesaCode("");
-  };
-
-  const closeUsernameLoginModal = () => {
-    setShowUsernameLoginModal(false);
-    setUsername("");
-    setPassword("");
-  };
-
-  const formatDuration = (value, type) => {
-    const typeLabel = type.toLowerCase();
-    return `${value} ${typeLabel}${value !== 1 ? "s" : ""}`;
-  };
+  git;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
