@@ -6,6 +6,7 @@ import subscriptionReducer from "../services/subscription/subscriptionSlice";
 import VoucherReducer from "../services/voucher/Vouchers";
 import userReducer from "../services/users/userSlices";
 import analyticReducer from "../services/Analytics/analyticSlices";
+import radiusReducer from "../services/radius/radiusSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     voucher: VoucherReducer,
     user: userReducer,
     analytic: analyticReducer,
+    radius: radiusReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
