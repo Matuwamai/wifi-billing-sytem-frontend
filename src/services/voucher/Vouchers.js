@@ -1,182 +1,214 @@
+// redux/slices/voucherSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 import BASE_URL from "../../../baseURL.js";
 
 axios.defaults.baseURL = BASE_URL;
 
-// Fetch all vouchers
+// Auth headers helper
+const getAuthHeaders = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  },
+});
+
+// ─────────────────────────────────────────────
+// ASYNC THUNKS
+// ─────────────────────────────────────────────
+
+/**
+ * Admin: Fetch all vouchers with filters
+ * GET /api/vouchers/list?status=&planId=&page=&limit=
+ */
 export const fetchVouchers = createAsyncThunk(
   "voucher/fetchVouchers",
-  async (_, { rejectWithValue }) => {
+  async (
+    { status = "", planId = "", page = 1, limit = 50 } = {},
+    { rejectWithValue },
+  ) => {
     try {
       const res = await axios.get("/vouchers/list", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        params: { status, planId, page, limit },
+        ...getAuthHeaders(),
       });
       console.log("✅ Fetch vouchers response:", res.data);
       return res.data;
     } catch (error) {
       console.error(
         "❌ Fetch vouchers error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to fetch vouchers"
+        error.response?.data?.message || "Failed to fetch vouchers",
       );
     }
-  }
+  },
 );
 
-// Check voucher validity
+/**
+ * Check voucher validity (no auth required)
+ * GET /api/vouchers/check/:code
+ */
 export const confirmVoucher = createAsyncThunk(
   "voucher/confirmVoucher",
   async (code, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`/vouchers/check/${code}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axios.get(`/vouchers/check/${code}`);
       console.log("✅ Confirm voucher response:", res.data);
       return res.data;
     } catch (error) {
       console.error(
         "❌ Confirm voucher error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to confirm voucher"
+        error.response?.data?.message || "Invalid voucher code",
       );
     }
-  }
+  },
 );
 
-// Redeem voucher
+/**
+ * Redeem voucher (no auth required - creates user if needed)
+ * POST /api/vouchers/redeem
+ */
 export const redeemVoucher = createAsyncThunk(
   "voucher/redeemVoucher",
-  async (voucherData, { rejectWithValue }) => {
+  async (
+    { voucherCode, phone, deviceName, ipAddress, userAgent },
+    { rejectWithValue },
+  ) => {
     try {
-      const res = await axios.post("/vouchers/redeem", voucherData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+      const res = await axios.post("/vouchers/redeem", {
+        voucherCode,
+        phone,
+        deviceName,
+        ipAddress,
+        userAgent,
       });
       console.log("✅ Redeem voucher response:", res.data);
       return res.data;
     } catch (error) {
       console.error(
         "❌ Redeem voucher error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to redeem voucher"
+        error.response?.data?.message || "Failed to redeem voucher",
       );
     }
-  }
+  },
 );
 
-// Create voucher(s)
+/**
+ * Admin: Create voucher(s)
+ * POST /api/vouchers/create
+ */
 export const createVoucher = createAsyncThunk(
   "voucher/createVoucher",
-  async (voucherData, { rejectWithValue }) => {
+  async (
+    { planId, quantity = 1, expiresInDays = 30, adminId },
+    { rejectWithValue },
+  ) => {
     try {
-      const res = await axios.post("/vouchers/create", voucherData, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axios.post(
+        "/vouchers/create",
+        { planId, quantity, expiresInDays, adminId },
+        getAuthHeaders(),
+      );
       console.log("✅ Create voucher response:", res.data);
       return res.data;
     } catch (error) {
       console.error(
         "❌ Create voucher error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to create voucher"
+        error.response?.data?.message || "Failed to create voucher",
       );
     }
-  }
+  },
 );
 
-// Delete voucher
+/**
+ * Admin: Delete voucher
+ * DELETE /api/vouchers/:id
+ */
 export const deleteVoucher = createAsyncThunk(
   "voucher/deleteVoucher",
   async (voucherId, { rejectWithValue }) => {
     try {
-      const res = await axios.delete(`/vouchers/${voucherId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const res = await axios.delete(
+        `/vouchers/${voucherId}`,
+        getAuthHeaders(),
+      );
       console.log("✅ Delete voucher response:", res.data);
       return { id: voucherId, ...res.data };
     } catch (error) {
       console.error(
         "❌ Delete voucher error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to delete voucher"
+        error.response?.data?.message || "Failed to delete voucher",
       );
     }
-  }
+  },
 );
 
-// Expire old vouchers
+/**
+ * Admin: Manually expire old vouchers
+ * POST /api/vouchers/expire
+ */
 export const expireVouchers = createAsyncThunk(
   "voucher/expireVouchers",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.post(
-        "/vouchers/expire",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const res = await axios.post("/vouchers/expire", {}, getAuthHeaders());
       console.log("✅ Expire vouchers response:", res.data);
       return res.data;
     } catch (error) {
       console.error(
         "❌ Expire vouchers error:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return rejectWithValue(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to expire vouchers"
+        error.response?.data?.message || "Failed to expire vouchers",
       );
     }
-  }
+  },
 );
+
+// ─────────────────────────────────────────────
+// SLICE
+// ─────────────────────────────────────────────
 
 const voucherSlice = createSlice({
   name: "voucher",
   initialState: {
+    // Vouchers list (admin)
     vouchers: [],
+    total: 0,
     pagination: {
-      total: 0,
       page: 1,
       limit: 50,
       pages: 0,
     },
+
+    // Voucher confirmation (before redemption)
+    confirmedVoucher: null,
+    confirmLoading: false,
+
+    // Redemption result
+    redemptionResult: null, // ✨ NEW: stores RADIUS credentials after redemption
+    redemptionLoading: false,
+
+    // Creation result
+    lastCreated: null, // Recently created vouchers
+
+    // UI states
     loading: false,
     error: null,
-    lastCreated: null, // Store last created vouchers for display
   },
   reducers: {
     clearError: (state) => {
@@ -185,104 +217,144 @@ const voucherSlice = createSlice({
     clearLastCreated: (state) => {
       state.lastCreated = null;
     },
+    clearConfirmedVoucher: (state) => {
+      state.confirmedVoucher = null;
+    },
+    clearRedemptionResult: (state) => {
+      state.redemptionResult = null;
+    },
+    resetVouchers: (state) => {
+      state.vouchers = [];
+      state.total = 0;
+      state.confirmedVoucher = null;
+      state.redemptionResult = null;
+      state.lastCreated = null;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch vouchers
+      // ── Fetch vouchers ──
       .addCase(fetchVouchers.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchVouchers.fulfilled, (state, action) => {
         state.loading = false;
-        // API returns: { success: true, vouchers: [...], pagination: {...} }
-        state.vouchers = action.payload.vouchers || [];
-        state.pagination = action.payload.pagination || state.pagination;
+        state.vouchers = action.payload.vouchers || action.payload.data || [];
+        state.total = action.payload.total || state.vouchers.length;
+        state.pagination = {
+          page: action.payload.page || 1,
+          limit: action.payload.limit || 50,
+          pages:
+            action.payload.pages ||
+            Math.ceil(state.total / (action.payload.limit || 50)),
+        };
       })
       .addCase(fetchVouchers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to fetch vouchers";
+        state.error = action.payload;
       })
 
-      // Confirm voucher
+      // ── Confirm voucher ──
       .addCase(confirmVoucher.pending, (state) => {
-        state.loading = true;
+        state.confirmLoading = true;
         state.error = null;
+        state.confirmedVoucher = null;
       })
       .addCase(confirmVoucher.fulfilled, (state, action) => {
-        state.loading = false;
-        // API returns: { valid: true/false, message: "...", voucher: {...} }
+        state.confirmLoading = false;
+        state.confirmedVoucher = action.payload.voucher || action.payload;
       })
       .addCase(confirmVoucher.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to confirm voucher";
+        state.confirmLoading = false;
+        state.error = action.payload;
+        state.confirmedVoucher = null;
       })
 
-      // Redeem voucher
+      // ── Redeem voucher ──
       .addCase(redeemVoucher.pending, (state) => {
-        state.loading = true;
+        state.redemptionLoading = true;
         state.error = null;
+        state.redemptionResult = null;
       })
       .addCase(redeemVoucher.fulfilled, (state, action) => {
-        state.loading = false;
-        // API returns: { success: true, message: "...", subscription: {...}, session: {...} }
+        state.redemptionLoading = false;
+        // Store full redemption result including RADIUS credentials
+        state.redemptionResult = {
+          success: true,
+          user: action.payload.user,
+          subscription: action.payload.subscription,
+          instructions: action.payload.instructions,
+          // RADIUS credentials for WiFi login
+          radiusCredentials: {
+            username: action.payload.user?.username,
+            password: action.payload.user?.password,
+          },
+        };
       })
       .addCase(redeemVoucher.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload || "Failed to redeem voucher";
+        state.redemptionLoading = false;
+        state.error = action.payload;
+        state.redemptionResult = null;
       })
 
-      // Create voucher
+      // ── Create voucher ──
       .addCase(createVoucher.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.lastCreated = null;
       })
       .addCase(createVoucher.fulfilled, (state, action) => {
         state.loading = false;
-        // API returns: { success: true, message: "...", vouchers: [{code, plan, expiresAt}] }
+        // Store created vouchers for display
         state.lastCreated = action.payload.vouchers || [];
-        // Note: We don't add to state.vouchers here because the full voucher objects
-        // aren't returned. User should call fetchVouchers() to refresh the list.
       })
       .addCase(createVoucher.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to create voucher";
+        state.error = action.payload;
       })
 
-      // Delete voucher
+      // ── Delete voucher ──
       .addCase(deleteVoucher.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(deleteVoucher.fulfilled, (state, action) => {
         state.loading = false;
-        // Remove the deleted voucher from the list
+        // Remove deleted voucher from list
         state.vouchers = state.vouchers.filter(
-          (v) => v.id !== action.payload.id
+          (v) => v.id !== action.payload.id,
         );
+        state.total = Math.max(0, state.total - 1);
       })
       .addCase(deleteVoucher.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to delete voucher";
+        state.error = action.payload;
       })
 
-      // Expire vouchers
+      // ── Expire vouchers ──
       .addCase(expireVouchers.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(expireVouchers.fulfilled, (state, action) => {
         state.loading = false;
-        // API returns: { success: true, message: "...", count: N }
-        // Note: User should call fetchVouchers() to refresh the list
+        // User should refetch vouchers list to see updated statuses
       })
       .addCase(expireVouchers.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to expire vouchers";
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearError, clearLastCreated } = voucherSlice.actions;
+export const {
+  clearError,
+  clearLastCreated,
+  clearConfirmedVoucher,
+  clearRedemptionResult,
+  resetVouchers,
+} = voucherSlice.actions;
 
 export default voucherSlice.reducer;
