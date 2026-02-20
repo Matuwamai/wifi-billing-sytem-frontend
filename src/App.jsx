@@ -21,6 +21,8 @@ import UsersPage from "./pages/Admin/userPage";
 import AnalyticsPage from "./pages/Admin/AnalyticPage";
 import Unauthorized from "./pages/Admin/UnauthorizedPage";
 import LoginPage from "./pages/Admin/LoginPage";
+import AdminRadiusDashboard from "./pages/Admin/AdminRadiusDashBoard";
+import AdminActiveSessionsPage from "./pages/Admin/AdminActiveSession";
 import ProtectedRoute from "./componets/ProtectedRoutes";
 
 function App() {
@@ -57,6 +59,11 @@ function App() {
               <Route path="vouchers" element={<VoucherPage />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="radius" element={<AdminRadiusDashboard />} />
+              <Route
+                path="active-sessions"
+                element={<AdminActiveSessionsPage />}
+              />
             </Route>
 
             {/* Fallback Routes */}

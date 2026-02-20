@@ -42,7 +42,6 @@ const Sidebar = ({ onClose }) => {
       icon: <Users size={20} />,
       path: "/admin/users",
       requiredRole: "ADMIN",
-      badge: "12",
     },
     {
       name: "Plans",
@@ -55,7 +54,6 @@ const Sidebar = ({ onClose }) => {
       icon: <CreditCard size={20} />,
       path: "/admin/payments",
       requiredRole: "ADMIN",
-      badge: "3",
     },
     {
       name: "Subscriptions",
@@ -76,15 +74,15 @@ const Sidebar = ({ onClose }) => {
       requiredRole: "ADMIN",
     },
     {
-      name: "System Logs",
+      name: "Radius",
       icon: <Database size={20} />,
-      path: "/admin/logs",
+      path: "/admin/radius",
       requiredRole: "ADMIN",
     },
     {
-      name: "Activity",
+      name: "Active Sessions",
       icon: <Activity size={20} />,
-      path: "/admin/activity",
+      path: "/admin/active-sessions",
       requiredRole: "MODERATOR",
     },
   ];
