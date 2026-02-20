@@ -251,7 +251,7 @@ const AdminPlansPage = () => {
                             <span>
                               {formatDuration(
                                 plan.durationValue,
-                                plan.durationType
+                                plan.durationType,
                               )}
                             </span>
                           </div>
@@ -334,7 +334,7 @@ const AdminPlansPage = () => {
                         <span>
                           {formatDuration(
                             plan.durationValue,
-                            plan.durationType
+                            plan.durationType,
                           )}
                         </span>
                       </div>

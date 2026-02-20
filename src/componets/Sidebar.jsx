@@ -91,7 +91,7 @@ const Sidebar = ({ onClose }) => {
 
   // Check if user has permission for a link
   const hasPermission = (requiredRole) => {
-    if (!user?.UserRole) return false;
+    if (!user?.role) return false;
 
     const rolesHierarchy = {
       USER: 0,
@@ -99,7 +99,7 @@ const Sidebar = ({ onClose }) => {
       ADMIN: 2,
     };
 
-    const userRoleLevel = rolesHierarchy[user.UserRole] || 0;
+    const userRoleLevel = rolesHierarchy[user.role] || 0;
     const requiredRoleLevel = rolesHierarchy[requiredRole] || 0;
 
     return userRoleLevel >= requiredRoleLevel;
@@ -107,7 +107,7 @@ const Sidebar = ({ onClose }) => {
 
   // Filter links based on user role
   const filteredLinks = navLinks.filter((link) =>
-    hasPermission(link.requiredRole)
+    hasPermission(link.requiredRole),
   );
 
   const handleNavigation = (path) => {

@@ -22,7 +22,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
   const { user, token, loading, error, subscription, session } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
   /* Restore user on refresh */
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
 
   /* Reactive auth state */
   const isAuthenticated = token === null ? false : true;
-  const isAdmin = user?.UserRole === "ADMIN";
+  const isAdmin = user?.role === "ADMIN";
 
   /* Permissions */
   const hasPermission = useCallback(
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
 
       return roles[user.UserRole] >= roles[requiredRole];
     },
-    [user]
+    [user],
   );
 
   /* Actions */
@@ -89,6 +89,7 @@ export const AuthProvider = ({ children }) => {
           console.log("AuthContext: Login successful");
           if (result.success) {
             // Add a small delay to ensure state updates
+
             setTimeout(() => {
               console.log("Redirecting after login...");
             }, 1000);
@@ -111,7 +112,7 @@ export const AuthProvider = ({ children }) => {
         };
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleLogout = useCallback(() => {
@@ -164,7 +165,7 @@ export const AuthProvider = ({ children }) => {
       handleLogin,
       handleLogout,
       handleClearError,
-    ]
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

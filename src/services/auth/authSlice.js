@@ -85,6 +85,33 @@ export const createGuestUser = createAsyncThunk(
  * Login with username + password (RADIUS credentials)
  * POST /api/auth/login
  */
+export const login = createAsyncThunk(
+  "auth/admin-login",
+  async ({ phone, password }, { rejectWithValue }) => {
+    try {
+      const res = await axios.post("/auth/admin-login", {
+        phone,
+        password,
+      });
+
+      // Save token
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      return res.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Invalid phone or password",
+      );
+    }
+  },
+);
+
+/**
+ * Login with username + password (RADIUS credentials)
+ * POST /api/auth/login
+ */
 export const loginWithUsername = createAsyncThunk(
   "auth/loginWithUsername",
   async (

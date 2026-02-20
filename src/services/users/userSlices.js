@@ -65,7 +65,7 @@ export const fetchUserProfile = createAsyncThunk(
   async (userId, { rejectWithValue }) => {
     try {
       console.log("📥 Fetching user profile for ID:", userId);
-      const res = await axios.get(`/users/${userId}`, getAuthHeaders());
+      const res = await axios.get(`/users/profile/${userId}`, getAuthHeaders());
       return res.data;
     } catch (error) {
       return rejectWithValue(
@@ -84,7 +84,7 @@ export const updateUser = createAsyncThunk(
   async ({ userId, updates }, { rejectWithValue }) => {
     try {
       const res = await axios.patch(
-        `/users/${userId}`,
+        `/users/profile/${userId}`,
         updates,
         getAuthHeaders(),
       );

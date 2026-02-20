@@ -17,7 +17,7 @@ import {
 const AdminSubscriptionsPage = () => {
   const dispatch = useDispatch();
   const { allSubscriptions, loading, error } = useSelector(
-    (state) => state.subscription
+    (state) => state.subscription,
   );
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -312,7 +312,7 @@ const AdminSubscriptionsPage = () => {
                           <Clock className="w-4 h-4" />
                           <span>
                             {subscription.plan?.durationValue}{" "}
-                            {subscription.plan?.durationType.toLowerCase()}(s)
+                            {subscription.plan?.durationType}(s)
                           </span>
                         </div>
                       </td>
@@ -358,7 +358,7 @@ const AdminSubscriptionsPage = () => {
                       <span className="text-blue-300 text-xs">Duration</span>
                       <p className="text-white font-semibold">
                         {subscription.plan?.durationValue}{" "}
-                        {subscription.plan?.durationType.toLowerCase()}(s)
+                        {subscription.plan?.durationType}(s)
                       </p>
                     </div>
                     <div className="bg-white/5 rounded-lg p-2">

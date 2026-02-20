@@ -77,7 +77,7 @@ const Navbar = ({ onMenuClick, showMenuButton = true }) => {
 
   const markAllAsRead = () => {
     setNotifications(
-      notifications.map((notif) => ({ ...notif, unread: false }))
+      notifications.map((notif) => ({ ...notif, unread: false })),
     );
   };
 
@@ -102,7 +102,7 @@ const Navbar = ({ onMenuClick, showMenuButton = true }) => {
   };
 
   const getUserRole = () => {
-    if (!user?.UserRole) return "User";
+    if (!user?.role) return "User";
 
     const roleMap = {
       ADMIN: "Administrator",
@@ -110,7 +110,7 @@ const Navbar = ({ onMenuClick, showMenuButton = true }) => {
       USER: "User",
     };
 
-    return roleMap[user.UserRole] || user.UserRole;
+    return roleMap[user.role] || user.role;
   };
 
   return (
