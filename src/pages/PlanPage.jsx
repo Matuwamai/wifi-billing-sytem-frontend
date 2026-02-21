@@ -385,7 +385,7 @@ const PlansPage = () => {
       console.log("[PAYMENT SUCCESS] Payment initiated successfully");
       showStatus(
         "Payment initiated! Check your phone for STK push.",
-        "success"
+        "success",
       );
       setTimeout(() => {
         setShowPaymentModal(false);
@@ -441,7 +441,7 @@ const PlansPage = () => {
 
     console.log(
       "[PAYMENT] Suggested username for registration:",
-      suggestedUsername
+      suggestedUsername,
     );
 
     const paymentData = {
@@ -468,7 +468,7 @@ const PlansPage = () => {
         } else {
           showStatus(
             "Payment initiated successfully! Check your phone.",
-            "success"
+            "success",
           );
         }
 
@@ -496,7 +496,7 @@ const PlansPage = () => {
     if (!voucherCode || voucherCode.length < 10) {
       showStatus(
         "Please enter a valid voucher code (minimum 10 characters)",
-        "error"
+        "error",
       );
       return;
     }
@@ -524,7 +524,7 @@ const PlansPage = () => {
       // Show success with temp token
       showStatus(
         `Voucher redeemed! Use temporary credentials to connect.`,
-        "success"
+        "success",
       );
 
       // Show modal with credentials
@@ -552,7 +552,7 @@ const PlansPage = () => {
       showStatus(
         error ||
           "Failed to redeem voucher. Please check the code and try again.",
-        "error"
+        "error",
       );
     } finally {
       setVoucherLoading(false);
@@ -593,7 +593,7 @@ const PlansPage = () => {
       showStatus(
         error ||
           "Failed to login. Please check your M-Pesa code and try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -633,7 +633,7 @@ const PlansPage = () => {
       showStatus(
         error ||
           "Failed to login. Please check your credentials and try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -725,7 +725,7 @@ const PlansPage = () => {
         </div>
 
         {/* Plans Section - Commented out for now */}
-        {/* <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 pb-8 sm:pb-12">
           {plansLoading ? (
             <div className="flex justify-center items-center h-40">
               <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
@@ -768,7 +768,7 @@ const PlansPage = () => {
                         <span className="text-white font-semibold">
                           {formatDuration(
                             plan.durationValue,
-                            plan.durationType
+                            plan.durationType,
                           )}
                         </span>
                       </div>
@@ -795,7 +795,7 @@ const PlansPage = () => {
               ))}
             </div>
           )}
-        </div> */}
+        </div>
 
         {/* Voucher Section - Always Visible */}
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-8">
@@ -867,10 +867,10 @@ const PlansPage = () => {
         </div>
 
         {/* Login Options */}
-        {/* <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-12 sm:pb-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* M-Pesa Login Card */}
-        {/* <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-400 rounded-2xl mb-4 shadow-lg shadow-cyan-500/50">
                   <Receipt className="text-white w-8 h-8" />
@@ -890,10 +890,10 @@ const PlansPage = () => {
                 <Receipt className="w-5 h-5" />
                 Login with M-Pesa
               </button>
-            </div> */}
+            </div>
 
-        {/* Username Login Card */}
-        {/* <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
+            {/* Username Login Card */}
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 sm:p-8 border border-white/20">
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-400 rounded-2xl mb-4 shadow-lg shadow-green-500/50">
                   <UserCircle className="text-white w-8 h-8" />
@@ -915,7 +915,7 @@ const PlansPage = () => {
               </button>
             </div>
           </div>
-        </div> */}
+        </div>
       </div>
       // {/* Payment Modal */}
       {showPaymentModal && selectedPlan && (
@@ -946,7 +946,7 @@ const PlansPage = () => {
                 <span className="text-white font-semibold">
                   {formatDuration(
                     selectedPlan.durationValue,
-                    selectedPlan.durationType
+                    selectedPlan.durationType,
                   )}
                 </span>
               </div>
