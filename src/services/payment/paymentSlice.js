@@ -22,32 +22,27 @@ const getAuthHeaders = () => ({
  */
 export const startPayment = createAsyncThunk(
   "payment/startPayment",
-  async (
-    {
-      phone,
-      userId,
-      planId,
-      macAddress,
-      deviceName,
-      deviceHostname,
-      suggestedUsername,
-    },
-    { rejectWithValue },
-  ) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const res = await axios.post("/payments/initiate", {
-        phone,
-        userId,
-        planId,
-        macAddress,
-        deviceName,
-        deviceHostname, // ✨ NEW: for username generation
-        suggestedUsername, // ✨ NEW: optional username hint
-      });
-      return res.data;
+      const res = await axios.post("/payments/initiate", payload);
+
+      const data = res.data; // ✅ FIXED
+
+      console.log("[FRONTEND] Paystack response:", data);
+
+      if (data.success && data.authorization_url) {
+        // ✅ Redirect immediately
+        window.location.href = data.authorization_url;
+      } else {
+        throw new Error(data.message || "Payment failed");
+      }
+
+      return data;
     } catch (error) {
+      console.error("[THUNK ERROR]", error);
+
       return rejectWithValue(
-        error.response?.data?.message || "Payment initiation failed",
+        error.response?.data?.message || error.message || "Payment failed",
       );
     }
   },
@@ -82,12 +77,6 @@ export const fetchAllPayments = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      console.log("📥 Fetching payments with params:", {
-        search,
-        status,
-        limit,
-        offset,
-      });
       const res = await axios.get("/payments", {
         params: { search, status, limit, offset },
         ...getAuthHeaders(),
