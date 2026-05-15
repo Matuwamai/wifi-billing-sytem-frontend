@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, Eye, EyeOff, LogIn, Shield } from "lucide-react";
 import { useAuth } from "../../context/AuthContex";
@@ -8,19 +8,11 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const isMountedRef = useRef(true);
 
   const { login, error, clearError, user, loading, isAuthenticated, isAdmin } =
-    useAuth(user);
-  const navigate = useNavigate();
+    useAuth(); // Fixed: removed argument
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+  const navigate = useNavigate();
 
   // Restore saved phone number
   useEffect(() => {
@@ -35,23 +27,9 @@ const LoginPage = () => {
     clearError();
   }, [clearError]);
 
-  // Reset isSubmitting when auth state changes
+  // Redirect logic - simplified
   useEffect(() => {
-    if (isAuthenticated && isMountedRef.current) {
-      setIsSubmitting(false);
-    }
-  }, [isAuthenticated]);
-
-  // Reset isSubmitting when error occurs
-  useEffect(() => {
-    if (error && isMountedRef.current) {
-      setIsSubmitting(false);
-    }
-  }, [error]);
-
-  // SINGLE REDIRECT LOGIC - Only redirect if already logged in
-  useEffect(() => {
-    // If user is already authenticated and is admin, redirect
+    // Only redirect if authenticated AND is admin AND not loading
     if (isAuthenticated && isAdmin && !loading) {
       navigate("/admin/plans", { replace: true });
     }
@@ -59,11 +37,12 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!phone || !password || isSubmitting) return;
 
-    setIsSubmitting(true);
+    if (!phone || !password || loading) return;
+
     clearError();
 
+    // Save remember me preference
     if (rememberMe) {
       localStorage.setItem("admin_phone", phone);
       localStorage.setItem("remember_admin", "true");
@@ -72,40 +51,19 @@ const LoginPage = () => {
       localStorage.removeItem("remember_admin");
     }
 
-    try {
-      const result = await login({ phone, password });
+    // Login using the context (loading state is handled by Redux)
+    const result = await login({ phone, password });
 
-      // Only set isSubmitting to false if login fails
-      if (!result.success && isMountedRef.current) {
-        setIsSubmitting(false);
-      }
-      // If success, let the useEffect handle setting isSubmitting to false
-    } catch (err) {
-      console.error(err);
-      if (isMountedRef.current) {
-        setIsSubmitting(false);
-      }
+    // If login fails, error will be in context's error state
+    // If success, the redirect useEffect will handle navigation
+    if (!result.success) {
+      // Error is already set in context's error state
+      console.log("Login failed:", result.error);
     }
   };
 
-  // Combined loading state - Fixed logic
-  const isLoading = isSubmitting; // Just use isSubmitting for form state
-  const isRedirecting = isAuthenticated && isAdmin && loading; // For redirect loading screen
-
-  // Show loading screen only when redirecting after successful login
-  if (isRedirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f172a] to-[#1e293b]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-slate-300">Redirecting to admin panel...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Don't show login form if already authenticated as admin
-  if (isAuthenticated && isAdmin) {
+  if (isAuthenticated && isAdmin && !loading) {
     return null; // Will redirect via useEffect
   }
 
@@ -142,7 +100,7 @@ const LoginPage = () => {
             Sign in to continue
           </h2>
 
-          <form id="loginForm" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
             {/* Phone Input */}
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-300 mb-2">
@@ -159,7 +117,7 @@ const LoginPage = () => {
                   className="w-full pl-16 pr-4 py-3 bg-slate-900/70 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="700 000 000"
                   required
-                  disabled={isLoading}
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -174,7 +132,7 @@ const LoginPage = () => {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
                   {showPassword ? "Hide" : "Show"}
                 </button>
@@ -187,13 +145,13 @@ const LoginPage = () => {
                   className="w-full pl-4 pr-12 py-3 bg-slate-900/70 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="Enter your password"
                   required
-                  disabled={isLoading}
+                  disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  disabled={isLoading}
+                  disabled={loading}
                 >
                   {showPassword ? (
                     <EyeOff size={20} className="text-slate-400" />
@@ -212,7 +170,7 @@ const LoginPage = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 text-blue-600 bg-slate-800 border-slate-700 rounded focus:ring-blue-500 focus:ring-offset-slate-900"
-                  disabled={isLoading}
+                  disabled={loading}
                 />
                 <span className="ml-2 text-sm text-slate-300">Remember me</span>
               </label>
@@ -220,7 +178,7 @@ const LoginPage = () => {
                 type="button"
                 className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
                 onClick={() => navigate("/admin/forgot-password")}
-                disabled={isLoading}
+                disabled={loading}
               >
                 Forgot password?
               </button>
@@ -236,10 +194,10 @@ const LoginPage = () => {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading || !phone || !password}
+              disabled={loading || !phone || !password}
               className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Signing in...</span>
