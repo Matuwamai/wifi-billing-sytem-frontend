@@ -211,21 +211,33 @@ export const logout = createAsyncThunk(
 // SLICE
 // ─────────────────────────────────────────────
 
+// redux/slices/authSlice.js - UPDATED VERSION
+
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null, // Current logged-in user
-    subscription: null, // Active subscription (from login response)
-    radiusCredentials: null, // ✨ NEW: { username, password } for WiFi login
+    user: null,
+    token: localStorage.getItem("token") || null, // ✅ ADD THIS
+    subscription: null,
+    radiusCredentials: null,
     loading: false,
     error: null,
     loginSuccess: false,
-    isAuthenticated: false, // ✨ NEW: Boolean flag
+    isAuthenticated: !!localStorage.getItem("token"), // ✅ Initialize from localStorage
   },
   reducers: {
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
+    },
+    setToken: (state, action) => {
+      // ✅ ADD THIS REDUCER
+      state.token = action.payload;
+      if (action.payload) {
+        localStorage.setItem("token", action.payload);
+      } else {
+        localStorage.removeItem("token");
+      }
     },
     clearError: (state) => {
       state.error = null;
@@ -236,18 +248,24 @@ const authSlice = createSlice({
     setSubscription: (state, action) => {
       state.subscription = action.payload;
     },
-    // ✨ NEW: Store RADIUS credentials after payment/voucher
     setRadiusCredentials: (state, action) => {
       state.radiusCredentials = action.payload;
     },
-    // Direct login for testing/manual auth
     directLogin: (state, action) => {
       state.user = action.payload.user;
       state.subscription = action.payload.subscription || null;
+      state.token = action.payload.token || null; // ✅ ADD THIS
       state.isAuthenticated = true;
       state.loading = false;
       state.error = null;
       state.loginSuccess = true;
+
+      if (state.token) {
+        localStorage.setItem("token", state.token);
+      }
+      if (state.user) {
+        localStorage.setItem("user", JSON.stringify(state.user));
+      }
     },
   },
   extraReducers: (builder) => {
@@ -262,7 +280,15 @@ const authSlice = createSlice({
         state.loading = false;
         state.loginSuccess = true;
         state.user = action.payload.user;
+        state.token = action.payload.token; // ✅ ADD THIS
         state.isAuthenticated = true;
+
+        if (state.token) {
+          localStorage.setItem("token", state.token);
+        }
+        if (state.user) {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
       })
       .addCase(register.rejected, (state, action) => {
         state.loading = false;
@@ -278,11 +304,55 @@ const authSlice = createSlice({
       .addCase(createGuestUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload.user;
+        state.token = action.payload.token; // ✅ ADD THIS
         state.isAuthenticated = true;
+
+        if (state.token) {
+          localStorage.setItem("token", state.token);
+        }
+        if (state.user) {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
       })
       .addCase(createGuestUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // ── ADMIN LOGIN (This is your main issue) ──
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.loginSuccess = false;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token; // ✅ ADD THIS - CRITICAL!
+        state.subscription = action.payload.subscription || null;
+        state.isAuthenticated = true;
+
+        // Save to localStorage
+        if (state.token) {
+          localStorage.setItem("token", state.token);
+        }
+        if (state.user) {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
+
+        console.log("✅ Login successful - State updated:", {
+          hasToken: !!state.token,
+          hasUser: !!state.user,
+          isAuthenticated: state.isAuthenticated,
+        });
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.loginSuccess = false;
+        state.error = action.payload;
+        state.isAuthenticated = false;
+        console.log("❌ Login failed:", action.payload);
       })
 
       // ── Login with username ──
@@ -295,8 +365,16 @@ const authSlice = createSlice({
         state.loading = false;
         state.loginSuccess = true;
         state.user = action.payload.user;
+        state.token = action.payload.token; // ✅ ADD THIS
         state.subscription = action.payload.subscription || null;
         state.isAuthenticated = true;
+
+        if (state.token) {
+          localStorage.setItem("token", state.token);
+        }
+        if (state.user) {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
       })
       .addCase(loginWithUsername.rejected, (state, action) => {
         state.loading = false;
@@ -314,9 +392,17 @@ const authSlice = createSlice({
         state.loading = false;
         state.loginSuccess = true;
         state.user = action.payload.user;
+        state.token = action.payload.token; // ✅ ADD THIS
         state.subscription = action.payload.subscription || null;
-        state.radiusCredentials = action.payload.radiusCredentials || null; // ✨ NEW
+        state.radiusCredentials = action.payload.radiusCredentials || null;
         state.isAuthenticated = true;
+
+        if (state.token) {
+          localStorage.setItem("token", state.token);
+        }
+        if (state.user) {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
       })
       .addCase(loginWithMpesaCode.rejected, (state, action) => {
         state.loading = false;
@@ -334,11 +420,15 @@ const authSlice = createSlice({
         state.user = action.payload.user;
         state.subscription = action.payload.subscription || null;
         state.isAuthenticated = true;
+        // Keep existing token
       })
       .addCase(getMe.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
         state.isAuthenticated = false;
+        state.token = null; // ✅ Clear token on failure
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       })
 
       // ── Logout ──
@@ -348,11 +438,13 @@ const authSlice = createSlice({
       .addCase(logout.fulfilled, (state) => {
         state.loading = false;
         state.user = null;
+        state.token = null; // ✅ Clear token
         state.subscription = null;
         state.radiusCredentials = null;
         state.error = null;
         state.loginSuccess = false;
         state.isAuthenticated = false;
+        // localStorage is already cleared in the thunk
       })
       .addCase(logout.rejected, (state, action) => {
         state.loading = false;
@@ -363,6 +455,7 @@ const authSlice = createSlice({
 
 export const {
   setUser,
+  setToken, // ✅ EXPORT THIS
   clearError,
   clearLoginSuccess,
   setSubscription,

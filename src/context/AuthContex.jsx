@@ -1,3 +1,4 @@
+// context/AuthContex.js - UPDATED
 import React, {
   createContext,
   useContext,
@@ -6,7 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { login, logout, clearError } from "../services/auth/authSlice";
+import { login, logout, clearError, setUser } from "../services/auth/authSlice";
 
 const AuthContext = createContext(null);
 
@@ -20,34 +21,35 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const dispatch = useDispatch();
-  const { user, token, loading, error, subscription, session } = useSelector(
-    (state) => state.auth,
-  );
+  const {
+    user,
+    token,
+    loading,
+    error,
+    subscription,
+    session,
+    isAuthenticated: reduxIsAuthenticated, // ✅ Use this instead
+  } = useSelector((state) => state.auth);
 
-  // Restore user on refresh - but this should be handled in your authSlice initialization
+  // Restore user on refresh - simplified since slice handles it
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
 
-    // Only restore if Redux doesn't have user but localStorage does
     if (storedToken && storedUser && !user && !token) {
       try {
-        // Dispatch an action to restore session
         dispatch(setUser(JSON.parse(storedUser)));
-        // Note: You also need to restore the token in Redux
       } catch (error) {
         console.error("Failed to restore session:", error);
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
       }
     }
   }, [dispatch, user, token]);
 
-  // Derived state
-  const isAuthenticated = !!token && !!user;
+  // Derived state - use Redux's isAuthenticated
+  const isAuthenticated = reduxIsAuthenticated; // ✅ Use Redux state
   const isAdmin = user?.role === "ADMIN";
 
-  // Permissions - fixed consistency
+  // Permissions
   const hasPermission = useCallback(
     (requiredRole = "USER") => {
       if (!user) return false;
@@ -70,14 +72,21 @@ export const AuthProvider = ({ children }) => {
   const handleLogin = useCallback(
     async (credentials) => {
       try {
+        console.log("🔐 Attempting login...");
         const result = await dispatch(login(credentials)).unwrap();
 
-        // Redux state is already updated by the login action
-        // Your authSlice should handle localStorage persistence
+        console.log("✅ Login result:", result);
 
-        return { success: true, data: result };
+        if (result?.token && result?.user) {
+          return { success: true, data: result };
+        } else {
+          return {
+            success: false,
+            error: result?.message || "Invalid response from server",
+          };
+        }
       } catch (err) {
-        console.error("Login failed:", err);
+        console.error("❌ Login failed:", err);
         return {
           success: false,
           error: err.message || "Login failed",
@@ -89,12 +98,23 @@ export const AuthProvider = ({ children }) => {
 
   const handleLogout = useCallback(() => {
     dispatch(logout());
-    // Let your authSlice handle localStorage cleanup
   }, [dispatch]);
 
   const handleClearError = useCallback(() => {
     dispatch(clearError());
   }, [dispatch]);
+
+  // Debug logging
+  useEffect(() => {
+    console.log("🔄 AuthContext State:", {
+      user: user?.phone || user?.username,
+      isAuthenticated,
+      isAdmin,
+      loading,
+      hasToken: !!token,
+      error,
+    });
+  }, [user, isAuthenticated, isAdmin, loading, token, error]);
 
   // Memoized context value
   const value = useMemo(

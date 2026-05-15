@@ -43,7 +43,7 @@ const LoginPage = () => {
       // Small delay to show success message before redirect
       setTimeout(() => {
         navigate("/admin/plans", { replace: true });
-      }, 1000);
+      }, 100);
     }
   }, [isAuthenticated, isAdmin, loading, navigate]);
 
