@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, Eye, EyeOff, LogIn, Shield } from "lucide-react";
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  LogIn,
+  Shield,
+  CheckCircle,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "../../context/AuthContex";
 
 const LoginPage = () => {
@@ -8,9 +16,11 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [loginError, setLoginError] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const { login, error, clearError, user, loading, isAuthenticated, isAdmin } =
-    useAuth(); // Fixed: removed argument
+    useAuth();
 
   const navigate = useNavigate();
 
@@ -27,20 +37,32 @@ const LoginPage = () => {
     clearError();
   }, [clearError]);
 
-  // Redirect logic - simplified
+  // Handle redirect after successful login
   useEffect(() => {
-    // Only redirect if authenticated AND is admin AND not loading
     if (isAuthenticated && isAdmin && !loading) {
-      navigate("/admin/plans", { replace: true });
+      // Small delay to show success message before redirect
+      setTimeout(() => {
+        navigate("/admin/plans", { replace: true });
+      }, 1000);
     }
   }, [isAuthenticated, isAdmin, loading, navigate]);
+
+  // Sync error from context
+  useEffect(() => {
+    if (error) {
+      setLoginError(error);
+    }
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!phone || !password || loading) return;
 
+    // Clear previous errors and success
     clearError();
+    setLoginError(null);
+    setShowSuccess(false);
 
     // Save remember me preference
     if (rememberMe) {
@@ -51,16 +73,58 @@ const LoginPage = () => {
       localStorage.removeItem("remember_admin");
     }
 
-    // Login using the context (loading state is handled by Redux)
-    const result = await login({ phone, password });
+    try {
+      const result = await login({ phone, password });
 
-    // If login fails, error will be in context's error state
-    // If success, the redirect useEffect will handle navigation
-    if (!result.success) {
-      // Error is already set in context's error state
-      console.log("Login failed:", result.error);
+      if (result.success) {
+        // Show success message
+        setShowSuccess(true);
+        // The redirect useEffect will handle navigation
+      } else {
+        // Show error message
+        setLoginError(result.error || "Login failed. Please try again.");
+      }
+    } catch (err) {
+      setLoginError("An unexpected error occurred. Please try again.");
     }
   };
+
+  // Show loading state while checking auth or logging in
+  if (loading && !showSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f172a] to-[#1e293b]">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-300">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show success message before redirect
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f172a] to-[#1e293b]">
+        <div className="text-center animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-green-500/20">
+            <CheckCircle size={40} className="text-white" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Login Successful!
+          </h2>
+          <p className="text-slate-300">
+            Welcome back, {user?.name || "Admin"}
+          </p>
+          <p className="text-slate-400 text-sm mt-4">
+            Redirecting to dashboard...
+          </p>
+          <div className="mt-6 w-48 h-1 bg-slate-700 rounded-full overflow-hidden mx-auto">
+            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full animate-progress" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Don't show login form if already authenticated as admin
   if (isAuthenticated && isAdmin && !loading) {
@@ -118,6 +182,7 @@ const LoginPage = () => {
                   placeholder="700 000 000"
                   required
                   disabled={loading}
+                  autoComplete="username"
                 />
               </div>
             </div>
@@ -146,6 +211,7 @@ const LoginPage = () => {
                   placeholder="Enter your password"
                   required
                   disabled={loading}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -154,9 +220,15 @@ const LoginPage = () => {
                   disabled={loading}
                 >
                   {showPassword ? (
-                    <EyeOff size={20} className="text-slate-400" />
+                    <EyeOff
+                      size={20}
+                      className="text-slate-400 hover:text-slate-300"
+                    />
                   ) : (
-                    <Eye size={20} className="text-slate-400" />
+                    <Eye
+                      size={20}
+                      className="text-slate-400 hover:text-slate-300"
+                    />
                   )}
                 </button>
               </div>
@@ -184,10 +256,30 @@ const LoginPage = () => {
               </button>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="mb-6 p-3 bg-red-900/30 border border-red-700/50 rounded-lg">
-                <p className="text-red-300 text-sm text-center">{error}</p>
+            {/* Error Message - Enhanced UI */}
+            {loginError && (
+              <div className="mb-6 p-4 bg-red-900/30 border border-red-700/50 rounded-lg animate-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <AlertCircle
+                    size={20}
+                    className="text-red-400 flex-shrink-0 mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <p className="text-red-300 text-sm font-medium">
+                      Login Failed
+                    </p>
+                    <p className="text-red-400/80 text-xs mt-1">{loginError}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setLoginError(null);
+                      clearError();
+                    }}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             )}
 
@@ -195,7 +287,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading || !phone || !password}
-              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white font-semibold rounded-lg shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
             >
               {loading ? (
                 <>
@@ -204,7 +296,10 @@ const LoginPage = () => {
                 </>
               ) : (
                 <>
-                  <LogIn size={20} />
+                  <LogIn
+                    size={20}
+                    className="group-hover:scale-110 transition-transform"
+                  />
                   <span>Sign In</span>
                 </>
               )}
@@ -233,6 +328,70 @@ const LoginPage = () => {
           </p>
         </div>
       </div>
+
+      {/* Add custom CSS for animations */}
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes zoom-in {
+          from {
+            transform: scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slide-in-from-top-2 {
+          from {
+            transform: translateY(-8px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes progress {
+          from {
+            width: 0%;
+          }
+          to {
+            width: 100%;
+          }
+        }
+
+        .animate-in {
+          animation-duration: 0.3s;
+          animation-fill-mode: both;
+        }
+
+        .fade-in {
+          animation-name: fade-in;
+        }
+
+        .zoom-in {
+          animation-name: zoom-in;
+        }
+
+        .slide-in-from-top-2 {
+          animation-name: slide-in-from-top-2;
+        }
+
+        .animate-progress {
+          animation: progress 1s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };
