@@ -12,7 +12,7 @@ const LoginPage = () => {
   const isMountedRef = useRef(true);
 
   const { login, error, clearError, user, loading, isAuthenticated, isAdmin } =
-    useAuth();
+    useAuth(user);
   const navigate = useNavigate();
 
   // Cleanup on unmount
